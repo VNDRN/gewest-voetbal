@@ -92,40 +92,40 @@ describe("exportToJson / parseImportedJson", () => {
   });
 
   it("throws on invalid JSON", () => {
-    expect(() => parseImportedJson("not json at all")).toThrow("Invalid JSON");
+    expect(() => parseImportedJson("not json at all")).toThrow("Ongeldig JSON");
   });
 
   it("throws on missing id field", () => {
     const bad = { name: "x", date: "x", config: {}, competitions: [{}, {}] };
-    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Missing field: id");
+    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Ontbrekend veld: id");
   });
 
   it("throws on missing name field", () => {
     const bad = { id: "x", date: "x", config: {}, competitions: [{}, {}] };
-    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Missing field: name");
+    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Ontbrekend veld: name");
   });
 
   it("throws on missing date field", () => {
     const bad = { id: "x", name: "x", config: {}, competitions: [{}, {}] };
-    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Missing field: date");
+    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Ontbrekend veld: date");
   });
 
   it("throws on missing config field", () => {
     const bad = { id: "x", name: "x", date: "x", competitions: [{}, {}] };
-    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Missing field: config");
+    expect(() => parseImportedJson(JSON.stringify(bad))).toThrow("Ontbrekend veld: config");
   });
 
   it("throws on missing competitions field", () => {
     const bad = { id: "x", name: "x", date: "x", config: {} };
     expect(() => parseImportedJson(JSON.stringify(bad))).toThrow(
-      "Missing field: competitions"
+      "Ontbrekend veld: competitions"
     );
   });
 
   it("throws when competitions has wrong length", () => {
     const bad = { id: "x", name: "x", date: "x", config: {}, competitions: [{}] };
     expect(() => parseImportedJson(JSON.stringify(bad))).toThrow(
-      "Missing field: competitions"
+      "Ontbrekend veld: competitions"
     );
   });
 });
@@ -135,7 +135,7 @@ describe("exportMatchesCsv", () => {
     const csv = exportMatchesCsv(makeTournament());
     const header = csv.split("\n")[0];
     expect(header).toBe(
-      "Competition,Phase,Group,Home,Away,HomeScore,AwayScore,Field,Time"
+      "Competitie,Fase,Groep,Thuis,Uit,ThuisScore,UitScore,Veld,Tijd"
     );
   });
 
@@ -175,7 +175,7 @@ describe("exportStandingsCsv", () => {
     const csv = exportStandingsCsv(makeTournament());
     const header = csv.split("\n")[0];
     expect(header).toBe(
-      "Competition,Group,Position,Team,P,W,D,L,GF,GA,GD,Pts"
+      "Competitie,Groep,Positie,Team,GS,W,G,V,DV,DT,DS,Ptn"
     );
   });
 

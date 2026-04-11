@@ -36,12 +36,12 @@ function createEmptyCompetition(id: string, name: string): Competition {
 function createDefaultTournament(): Tournament {
   return {
     id: crypto.randomUUID(),
-    name: "Tournament",
+    name: "Toernooi",
     date: new Date().toISOString().slice(0, 10),
     config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00" },
     competitions: [
-      createEmptyCompetition("mens", "Men's"),
-      createEmptyCompetition("womens", "Women's"),
+      createEmptyCompetition("mens", "Heren"),
+      createEmptyCompetition("womens", "Dames"),
     ],
   };
 }

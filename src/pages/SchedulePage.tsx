@@ -61,7 +61,7 @@ export default function SchedulePage() {
   if (allMatches.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
-        No schedule yet. Generate the draw from the Setup page.
+        Nog geen schema. Genereer de loting vanuit Instellingen.
       </div>
     );
   }
@@ -70,9 +70,9 @@ export default function SchedulePage() {
     <div className="space-y-4">
       <div className="inline-flex rounded-lg bg-gray-200 p-1">
         {([
-          { id: "all", label: "All" },
-          { id: "mens", label: "Men's" },
-          { id: "womens", label: "Women's" },
+          { id: "all", label: "Alles" },
+          { id: "mens", label: "Heren" },
+          { id: "womens", label: "Dames" },
         ] as const).map(({ id, label }) => (
           <button
             key={id}
@@ -101,8 +101,8 @@ export default function SchedulePage() {
 
       {editingMatch && (
         <ScoreInput
-          homeTeam={teamNames.get(editingMatch.homeTeamId) ?? "Home"}
-          awayTeam={teamNames.get(editingMatch.awayTeamId) ?? "Away"}
+          homeTeam={teamNames.get(editingMatch.homeTeamId) ?? "Thuis"}
+          awayTeam={teamNames.get(editingMatch.awayTeamId) ?? "Uit"}
           initialScore={editingMatch.score}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {

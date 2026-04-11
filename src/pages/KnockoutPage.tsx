@@ -102,7 +102,7 @@ export default function KnockoutPage() {
               {champion}
             </div>
             <div className="text-sm text-yellow-600">
-              {competition.name} Champion
+              {competition.name} Kampioen
             </div>
           </div>
         )}
@@ -121,13 +121,13 @@ export default function KnockoutPage() {
           <ScoreInput
             homeTeam={
               editingMatch.match.homeTeamId
-                ? (teamNames.get(editingMatch.match.homeTeamId) ?? "Home")
-                : "Home"
+                ? (teamNames.get(editingMatch.match.homeTeamId) ?? "Thuis")
+                : "Thuis"
             }
             awayTeam={
               editingMatch.match.awayTeamId
-                ? (teamNames.get(editingMatch.match.awayTeamId) ?? "Away")
-                : "Away"
+                ? (teamNames.get(editingMatch.match.awayTeamId) ?? "Uit")
+                : "Uit"
             }
             initialScore={editingMatch.match.score}
             onClose={() => setEditingMatch(null)}
@@ -172,22 +172,22 @@ export default function KnockoutPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
         {competition.groups.length === 0 ? (
           <p className="text-gray-500">
-            No groups yet. Generate the draw from Setup first.
+            Nog geen groepen. Genereer eerst de loting vanuit Instellingen.
           </p>
         ) : !allGroupsPlayed ? (
           <p className="text-gray-500">
-            Complete all group matches first before generating the knockout bracket.
+            Voltooi eerst alle groepswedstrijden voordat je de knock-outfase genereert.
           </p>
         ) : (
           <div>
             <p className="mb-4 text-gray-600">
-              All group matches are complete! Ready to generate the knockout bracket.
+              Alle groepswedstrijden zijn gespeeld! Klaar om de knock-outfase te genereren.
             </p>
             <button
               onClick={generateBracket}
               className="rounded-xl bg-green-600 px-8 py-3 text-lg font-semibold text-white hover:bg-green-700"
             >
-              Generate Knockout Bracket
+              Knock-outfase genereren
             </button>
           </div>
         )}

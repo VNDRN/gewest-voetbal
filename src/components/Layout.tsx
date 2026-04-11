@@ -10,10 +10,10 @@ import {
 import { useRef } from "react";
 
 const NAV_ITEMS = [
-  { to: "/setup", label: "Setup" },
-  { to: "/groups", label: "Groups" },
-  { to: "/schedule", label: "Schedule" },
-  { to: "/knockouts", label: "Knockouts" },
+  { to: "/setup", label: "Instellingen" },
+  { to: "/groups", label: "Groepen" },
+  { to: "/schedule", label: "Schema" },
+  { to: "/knockouts", label: "Knock-out" },
 ] as const;
 
 export default function Layout() {
@@ -46,7 +46,7 @@ export default function Layout() {
         const imported = parseImportedJson(reader.result as string);
         dispatch({ type: "SET_TOURNAMENT", tournament: imported });
       } catch (err) {
-        alert(`Import failed: ${(err as Error).message}`);
+        alert(`Import mislukt: ${(err as Error).message}`);
       }
     };
     reader.readAsText(file);
@@ -75,7 +75,7 @@ export default function Layout() {
               onClick={handleImport}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
             >
-              Import
+              Importeer
             </button>
             <input
               ref={fileInputRef}

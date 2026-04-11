@@ -41,7 +41,7 @@ export default function GroupsPage() {
       <div className="space-y-4">
         <CompetitionToggle activeId={activeComp} onChange={setActiveComp} />
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
-          No groups yet. Head to Setup to generate the draw.
+          Nog geen groepen. Ga naar Instellingen om de loting te genereren.
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export default function GroupsPage() {
       {bestNextPlacedRows.length > 0 && (
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
           <h3 className="mb-3 text-base font-semibold">
-            Best Next-Placed ({competition.config.bestNextPlacedCount} qualify)
+            Beste volgende ({competition.config.bestNextPlacedCount} kwalificeren)
           </h3>
           <StandingsTable
             rows={bestNextPlacedRows}
@@ -96,18 +96,18 @@ export default function GroupsPage() {
       )}
 
       <div className="flex gap-2 text-xs text-gray-500">
-        <span className="inline-block h-3 w-3 rounded bg-green-100 border border-green-200" /> Advancing
+        <span className="inline-block h-3 w-3 rounded bg-green-100 border border-green-200" /> Doorgang
         {competition.config.bestNextPlacedCount > 0 && (
           <>
-            <span className="ml-2 inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-200" /> Best next-placed contender
+            <span className="ml-2 inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-200" /> Beste volgende kandidaat
           </>
         )}
       </div>
 
       {editingMatch && (
         <ScoreInput
-          homeTeam={teamNames.get(editingMatch.match.homeTeamId) ?? "Home"}
-          awayTeam={teamNames.get(editingMatch.match.awayTeamId) ?? "Away"}
+          homeTeam={teamNames.get(editingMatch.match.homeTeamId) ?? "Thuis"}
+          awayTeam={teamNames.get(editingMatch.match.awayTeamId) ?? "Uit"}
           initialScore={editingMatch.match.score}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {

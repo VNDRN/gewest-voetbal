@@ -1,3 +1,417 @@
+import { useState, useMemo } from "react";
+import {
+  useTournament,
+  useTournamentDispatch,
+} from "../context/TournamentContext";
+import type { Competition, Group, Match, Team } from "../types";
+import {
+  getGroupOptions,
+  generateRoundRobinMatches,
+  calculateBracketFill,
+} from "../engine/groups";
+import { scheduleMatches } from "../engine/scheduler";
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function CompetitionSetup({ competition }: { competition: Competition }) {
+  const dispatch = useTournamentDispatch();
+  const [teamName, setTeamName] = useState("");
+
+  const groupOptions = useMemo(
+    () => getGroupOptions(competition.teams.length),
+    [competition.teams.length]
+  );
+
+  const selectedOption = groupOptions.find(
+    (o) => o.sizes[0] === competition.config.groupSize
+  );
+  const groupCount = selectedOption?.groupCount ?? 0;
+
+  const bracketFill = useMemo(
+    () =>
+      calculateBracketFill(groupCount, competition.config.advancingPerGroup),
+    [groupCount, competition.config.advancingPerGroup]
+  );
+
+  function addTeam() {
+    const name = teamName.trim();
+    if (!name) return;
+    const team: Team = {
+      id: crypto.randomUUID(),
+      name,
+      groupId: "",
+    };
+    dispatch({ type: "ADD_TEAM", competitionId: competition.id, team });
+    setTeamName("");
+  }
+
+  function removeTeam(teamId: string) {
+    dispatch({ type: "REMOVE_TEAM", competitionId: competition.id, teamId });
+  }
+
+  const maxAdvancing = Math.max(1, (selectedOption?.sizes[0] ?? 4) - 1);
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <h3 className="mb-4 text-lg font-semibold">{competition.name}</h3>
+
+      <div className="mb-4">
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Teams ({competition.teams.length})
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTeam()}
+            placeholder="Team name"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
+          <button
+            onClick={addTeam}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Add
+          </button>
+        </div>
+        {competition.teams.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {competition.teams.map((t) => (
+              <span
+                key={t.id}
+                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm"
+              >
+                {t.name}
+                <button
+                  onClick={() => removeTeam(t.id)}
+                  className="ml-1 text-gray-400 hover:text-red-500"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {groupOptions.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Group Size
+            </label>
+            <select
+              value={competition.config.groupSize}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_COMPETITION_CONFIG",
+                  competitionId: competition.id,
+                  config: { groupSize: Number(e.target.value) },
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              {[3, 4, 5].map((s) => (
+                <option key={s} value={s}>
+                  {s} teams per group
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Advancing per Group
+            </label>
+            <select
+              value={competition.config.advancingPerGroup}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_COMPETITION_CONFIG",
+                  competitionId: competition.id,
+                  config: { advancingPerGroup: Number(e.target.value) },
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              {Array.from({ length: maxAdvancing }, (_, i) => i + 1).map(
+                (n) => (
+                  <option key={n} value={n}>
+                    Top {n}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {groupOptions.length > 0 && (
+        <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+          <p>
+            <strong>Groups:</strong>{" "}
+            {groupOptions.map((o) => o.label).join(" / ")}
+          </p>
+          <p>
+            <strong>Bracket:</strong> {bracketFill.knockoutSize} teams
+            {bracketFill.bestNextPlacedCount > 0 && (
+              <> + {bracketFill.bestNextPlacedCount} best next-placed</>
+            )}
+          </p>
+        </div>
+      )}
+
+      {competition.teams.length > 0 && groupOptions.length === 0 && (
+        <p className="mt-3 text-sm text-amber-600">
+          Need at least 6 teams for group options.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function SetupPage() {
-  return <div>Setup Page</div>;
+  const tournament = useTournament();
+  const dispatch = useTournamentDispatch();
+
+  function formatTime(slot: number): string {
+    const { startTime, slotDurationMinutes } = tournament.config;
+    const [h, m] = startTime.split(":").map(Number);
+    const total = h * 60 + m + slot * slotDurationMinutes;
+    const hours = Math.floor(total / 60).toString().padStart(2, "0");
+    const mins = (total % 60).toString().padStart(2, "0");
+    return `${hours}:${mins}`;
+  }
+
+  const estimatedSlots = useMemo(() => {
+    let totalMatches = 0;
+    for (const comp of tournament.competitions) {
+      const opts = getGroupOptions(comp.teams.length);
+      if (opts.length === 0) continue;
+      const opt = opts.find((o) => o.sizes[0] === comp.config.groupSize);
+      if (!opt) continue;
+      for (const size of opt.sizes) {
+        totalMatches += (size * (size - 1)) / 2;
+      }
+    }
+    if (totalMatches === 0) return 0;
+    return Math.ceil(totalMatches / tournament.config.fieldCount);
+  }, [tournament.competitions, tournament.config.fieldCount]);
+
+  function handleGenerate() {
+    const allMatches: { match: Match; compId: string; groupId: string }[] = [];
+    const groupsPerComp: Map<string, Group[]> = new Map();
+
+    for (const comp of tournament.competitions) {
+      const opts = getGroupOptions(comp.teams.length);
+      if (opts.length === 0) continue;
+
+      const opt =
+        opts.find((o) => o.sizes[0] === comp.config.groupSize) ?? opts[0];
+      const shuffled = shuffle(comp.teams);
+      const groups: Group[] = [];
+      let teamIdx = 0;
+
+      for (let g = 0; g < opt.groupCount; g++) {
+        const groupSize = opt.sizes[g];
+        const groupId = `${comp.id}-group-${String.fromCharCode(65 + g)}`;
+        const groupTeams = shuffled.slice(teamIdx, teamIdx + groupSize);
+        teamIdx += groupSize;
+
+        for (const t of groupTeams) {
+          dispatch({
+            type: "REMOVE_TEAM",
+            competitionId: comp.id,
+            teamId: t.id,
+          });
+          dispatch({
+            type: "ADD_TEAM",
+            competitionId: comp.id,
+            team: { ...t, groupId },
+          });
+        }
+
+        const teamIds = groupTeams.map((t) => t.id);
+        const matches = generateRoundRobinMatches(teamIds, groupId);
+
+        for (const m of matches) {
+          allMatches.push({ match: m, compId: comp.id, groupId });
+        }
+
+        groups.push({
+          id: groupId,
+          name: `Group ${String.fromCharCode(65 + g)}`,
+          teamIds,
+          matches: [],
+        });
+      }
+
+      groupsPerComp.set(comp.id, groups);
+    }
+
+    const scheduled = scheduleMatches(
+      allMatches.map((m) => m.match),
+      tournament.config.fieldCount
+    );
+
+    const scheduledMap = new Map<string, Match>();
+    for (const m of scheduled) scheduledMap.set(m.id, m);
+
+    for (const [compId, groups] of groupsPerComp) {
+      const finalGroups = groups.map((g) => {
+        const groupMatches = allMatches
+          .filter((m) => m.compId === compId && m.groupId === g.id)
+          .map((m) => scheduledMap.get(m.match.id)!)
+          .filter(Boolean);
+        return { ...g, matches: groupMatches };
+      });
+
+      dispatch({ type: "SET_GROUPS", competitionId: compId, groups: finalGroups });
+
+      const opt = getGroupOptions(
+        tournament.competitions.find((c) => c.id === compId)!.teams.length
+      ).find(
+        (o) =>
+          o.sizes[0] ===
+          tournament.competitions.find((c) => c.id === compId)!.config.groupSize
+      );
+      if (opt) {
+        const bf = calculateBracketFill(
+          opt.groupCount,
+          tournament.competitions.find((c) => c.id === compId)!.config
+            .advancingPerGroup
+        );
+        dispatch({
+          type: "UPDATE_COMPETITION_CONFIG",
+          competitionId: compId,
+          config: {
+            knockoutSize: bf.knockoutSize,
+            bestNextPlacedCount: bf.bestNextPlacedCount,
+          },
+        });
+      }
+    }
+  }
+
+  const canGenerate = tournament.competitions.some(
+    (c) => getGroupOptions(c.teams.length).length > 0
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-semibold">Tournament Settings</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+          <div className="col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Name
+            </label>
+            <input
+              type="text"
+              value={tournament.name}
+              onChange={(e) =>
+                dispatch({ type: "UPDATE_NAME", name: e.target.value })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Date
+            </label>
+            <input
+              type="date"
+              value={tournament.date}
+              onChange={(e) =>
+                dispatch({ type: "UPDATE_DATE", date: e.target.value })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Fields
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={tournament.config.fieldCount}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_CONFIG",
+                  config: { fieldCount: Math.max(1, Number(e.target.value)) },
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Slot (min)
+            </label>
+            <input
+              type="number"
+              min={5}
+              max={120}
+              value={tournament.config.slotDurationMinutes}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_CONFIG",
+                  config: {
+                    slotDurationMinutes: Math.max(5, Number(e.target.value)),
+                  },
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Start Time
+            </label>
+            <input
+              type="time"
+              value={tournament.config.startTime}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_CONFIG",
+                  config: { startTime: e.target.value },
+                })
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {tournament.competitions.map((comp) => (
+          <CompetitionSetup key={comp.id} competition={comp} />
+        ))}
+      </div>
+
+      {estimatedSlots > 0 && (
+        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
+          Estimated: {estimatedSlots} time slots ({formatTime(0)} -{" "}
+          {formatTime(estimatedSlots)})
+        </div>
+      )}
+
+      <button
+        onClick={handleGenerate}
+        disabled={!canGenerate}
+        className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        Generate Schedule & Draw Groups
+      </button>
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 import type { GroupOption, Match } from "../types";
 
 function nextPowerOf2(n: number): number {
+  if (n <= 1) return 1;
   let p = 1;
   while (p < n) p *= 2;
   return p;
@@ -76,6 +77,10 @@ export function calculateBracketFill(
   groupCount: number,
   advancingPerGroup: number
 ): { knockoutSize: number; bestNextPlacedCount: number } {
+  if (groupCount < 1 || advancingPerGroup < 1) {
+    return { knockoutSize: 0, bestNextPlacedCount: 0 };
+  }
+
   const directQualifiers = groupCount * advancingPerGroup;
   let knockoutSize = nextPowerOf2(directQualifiers);
   let bestNextPlacedCount = knockoutSize - directQualifiers;

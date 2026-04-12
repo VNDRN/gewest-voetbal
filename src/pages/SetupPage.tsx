@@ -169,10 +169,14 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
       {groupOptions.length > 0 && (
         <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
           <p>
-            <strong>Knock-out:</strong> {bracketFill.knockoutSize} teams
+            <strong>Knock-out:</strong>{" "}
+            {groupCount * competition.config.advancingPerGroup +
+              bracketFill.bestNextPlacedCount}{" "}
+            teams (top {competition.config.advancingPerGroup}
             {bracketFill.bestNextPlacedCount > 0 && (
               <> + {bracketFill.bestNextPlacedCount} beste volgende</>
             )}
+            )
           </p>
         </div>
       )}

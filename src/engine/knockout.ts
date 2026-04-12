@@ -15,10 +15,21 @@ function deepCloneRounds(rounds: KnockoutRound[]): KnockoutRound[] {
   }));
 }
 
+export function bracketSeeds(size: number): number[] {
+  if (size <= 1) return [1];
+  const half = bracketSeeds(size / 2);
+  const result: number[] = [];
+  for (const seed of half) {
+    result.push(seed, size + 1 - seed);
+  }
+  return result;
+}
+
 export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
   const rounds: KnockoutRound[] = [];
   let matchCounter = 1;
   let currentSize = bracketSize;
+  const seeds = bracketSeeds(bracketSize);
 
   while (currentSize >= 2) {
     const matchCount = currentSize / 2;
@@ -37,8 +48,8 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
         timeSlot: -1,
         score: null,
         phase: "knockout",
-        homeSourceDescription: isFirstRound ? `Positie ${i * 2 + 1}` : "",
-        awaySourceDescription: isFirstRound ? `Positie ${i * 2 + 2}` : "",
+        homeSourceDescription: isFirstRound ? `Positie ${seeds[i * 2]}` : "",
+        awaySourceDescription: isFirstRound ? `Positie ${seeds[i * 2 + 1]}` : "",
       });
     }
 
@@ -68,97 +79,64 @@ export function seedBracket(
   if (teams.length === 0) return result;
 
   const firstRound = result[0];
-  // Build pairs that avoid same-group matchups
-  const paired = buildPairs(teams, firstRound.matches.length);
+  const matchCount = firstRound.matches.length;
+  const bSize = matchCount * 2;
 
-  for (let i = 0; i < paired.length && i < firstRound.matches.length; i++) {
-    firstRound.matches[i].homeTeamId = paired[i][0]?.teamId ?? null;
-    firstRound.matches[i].awayTeamId = paired[i][1]?.teamId ?? null;
+  const seedMap = new Map<number, { teamId: string; groupId: string }>();
+  for (let i = 0; i < teams.length && i < bSize; i++) {
+    seedMap.set(i + 1, teams[i]);
   }
 
-  // Handle any leftover teams that didn't fit into pairs
-  const placedIds = new Set(
-    paired.flatMap((p) => p.filter(Boolean).map((t) => t!.teamId))
-  );
-  const unplaced = teams.filter((t) => !placedIds.has(t.teamId));
+  const seedOrder = bracketSeeds(bSize);
+  const matchSlots: [number, number][] = [];
+  for (let i = 0; i < matchCount; i++) {
+    matchSlots.push([seedOrder[i * 2], seedOrder[i * 2 + 1]]);
+  }
 
-  for (const team of unplaced) {
-    for (let i = 0; i < firstRound.matches.length; i++) {
-      if (firstRound.matches[i].homeTeamId === null) {
-        firstRound.matches[i].homeTeamId = team.teamId;
-        break;
-      }
-      if (firstRound.matches[i].awayTeamId === null) {
-        firstRound.matches[i].awayTeamId = team.teamId;
-        break;
+  // Resolve same-group conflicts by swapping
+  for (let m = 0; m < matchCount; m++) {
+    const [homeSeed, awaySeed] = matchSlots[m];
+    const home = seedMap.get(homeSeed);
+    const away = seedMap.get(awaySeed);
+    if (!home || !away || home.groupId !== away.groupId) continue;
+
+    let swapped = false;
+    for (let other = 0; other < matchCount && !swapped; other++) {
+      if (other === m) continue;
+      const [ohSeed, oaSeed] = matchSlots[other];
+      const oh = seedMap.get(ohSeed);
+      const oa = seedMap.get(oaSeed);
+      if (!oa) continue;
+      if (oa.groupId !== home.groupId && (!oh || away.groupId !== oh.groupId)) {
+        seedMap.set(awaySeed, oa);
+        seedMap.set(oaSeed, away);
+        swapped = true;
       }
     }
+
+    if (!swapped) {
+      for (let other = 0; other < matchCount && !swapped; other++) {
+        if (other === m) continue;
+        const [ohSeed, oaSeed] = matchSlots[other];
+        const oh = seedMap.get(ohSeed);
+        const oa = seedMap.get(oaSeed);
+        if (!oh) continue;
+        if (oh.groupId !== away.groupId && (!oa || home.groupId !== oa.groupId)) {
+          seedMap.set(homeSeed, oh);
+          seedMap.set(ohSeed, home);
+          swapped = true;
+        }
+      }
+    }
+  }
+
+  for (let m = 0; m < matchCount; m++) {
+    const [homeSeed, awaySeed] = matchSlots[m];
+    firstRound.matches[m].homeTeamId = seedMap.get(homeSeed)?.teamId ?? null;
+    firstRound.matches[m].awayTeamId = seedMap.get(awaySeed)?.teamId ?? null;
   }
 
   return result;
-}
-
-type TeamEntry = { teamId: string; groupId: string };
-
-function buildPairs(
-  teams: TeamEntry[],
-  matchCount: number
-): (TeamEntry | null)[][] {
-  // Sort teams by group, interleaving groups to maximize avoidance
-  const byGroup = new Map<string, TeamEntry[]>();
-  for (const t of teams) {
-    if (!byGroup.has(t.groupId)) byGroup.set(t.groupId, []);
-    byGroup.get(t.groupId)!.push(t);
-  }
-
-  // Sort groups by size descending (largest group first)
-  const groups = [...byGroup.entries()].sort((a, b) => b[1].length - a[1].length);
-
-  // Interleave: round-robin pick from each group
-  const interleaved: TeamEntry[] = [];
-  let idx = 0;
-  let placed = true;
-  while (placed) {
-    placed = false;
-    for (const [, members] of groups) {
-      if (idx < members.length) {
-        interleaved.push(members[idx]);
-        placed = true;
-      }
-    }
-    idx++;
-  }
-
-  // Greedy pair from interleaved list
-  const remaining = [...interleaved];
-  const pairs: (TeamEntry | null)[][] = [];
-
-  while (remaining.length >= 2 && pairs.length < matchCount) {
-    const first = remaining.shift()!;
-    let bestIdx = -1;
-
-    for (let i = 0; i < remaining.length; i++) {
-      if (remaining[i].groupId !== first.groupId) {
-        bestIdx = i;
-        break;
-      }
-    }
-
-    if (bestIdx === -1) bestIdx = 0;
-
-    const second = remaining.splice(bestIdx, 1)[0];
-    pairs.push([first, second]);
-  }
-
-  if (remaining.length === 1 && pairs.length < matchCount) {
-    pairs.push([remaining[0], null]);
-  }
-
-  while (pairs.length < matchCount) {
-    pairs.push([null, null]);
-  }
-
-  return pairs;
 }
 
 export function advanceWinner(

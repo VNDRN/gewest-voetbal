@@ -1,8 +1,15 @@
-import type { Match } from "../types";
-
-type ScheduledMatch = Match & {
+type ScheduledMatch = {
+  id: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  fieldIndex: number;
+  timeSlot: number;
+  score: { home: number; away: number } | null;
+  phase: "group" | "knockout";
   competitionId: string;
   groupName: string;
+  homeSourceDescription?: string;
+  awaySourceDescription?: string;
 };
 
 type Props = {
@@ -80,39 +87,59 @@ export default function ScheduleGrid({
                 const badgeClass = isWomens
                   ? "bg-pink-100 text-pink-700"
                   : "bg-blue-100 text-blue-700";
+                const isKnockout = match.phase === "knockout";
+                const homeName = match.homeTeamId
+                  ? (teamNames.get(match.homeTeamId) ?? "?")
+                  : (match.homeSourceDescription ?? "TBD");
+                const awayName = match.awayTeamId
+                  ? (teamNames.get(match.awayTeamId) ?? "?")
+                  : (match.awaySourceDescription ?? "TBD");
+
+                const inner = (
+                  <>
+                    <div className="flex items-center justify-between gap-1">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeClass}`}
+                      >
+                        {isWomens ? "W" : "M"}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {match.groupName}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs">
+                      <span className={isKnockout && !match.homeTeamId ? "italic text-gray-400" : "font-medium"}>
+                        {homeName}
+                      </span>
+                      <span className="mx-1 text-gray-400">
+                        {match.score
+                          ? `${match.score.home}-${match.score.away}`
+                          : "vs"}
+                      </span>
+                      <span className={isKnockout && !match.awayTeamId ? "italic text-gray-400" : "font-medium"}>
+                        {awayName}
+                      </span>
+                    </div>
+                  </>
+                );
+
                 return (
                   <td
                     key={field}
                     className="border border-gray-200 px-2 py-1.5"
                   >
-                    <button
-                      onClick={() => onMatchClick(match)}
-                      className="w-full rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeClass}`}
-                        >
-                          {isWomens ? "W" : "M"}
-                        </span>
-                        <span className="text-[10px] text-gray-400">
-                          {match.groupName}
-                        </span>
+                    {isKnockout ? (
+                      <div className="rounded-lg border border-dashed border-gray-300 p-1.5">
+                        {inner}
                       </div>
-                      <div className="mt-1 text-xs">
-                        <span className="font-medium">
-                          {teamNames.get(match.homeTeamId) ?? "?"}
-                        </span>
-                        <span className="mx-1 text-gray-400">
-                          {match.score
-                            ? `${match.score.home}-${match.score.away}`
-                            : "vs"}
-                        </span>
-                        <span className="font-medium">
-                          {teamNames.get(match.awayTeamId) ?? "?"}
-                        </span>
-                      </div>
-                    </button>
+                    ) : (
+                      <button
+                        onClick={() => onMatchClick(match)}
+                        className="w-full rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50"
+                      >
+                        {inner}
+                      </button>
+                    )}
                   </td>
                 );
               })}

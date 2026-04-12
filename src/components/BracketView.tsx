@@ -65,26 +65,101 @@ function MatchSlot({
   );
 }
 
-export default function BracketView({ rounds, teamNames, onMatchClick }: Props) {
+function RoundColumn({
+  name,
+  matches,
+  roundIndex,
+  teamNames,
+  onMatchClick,
+}: {
+  name: string;
+  matches: KnockoutMatch[];
+  roundIndex: number;
+  teamNames: Map<string, string>;
+  onMatchClick: (match: KnockoutMatch, roundIndex: number) => void;
+}) {
   return (
-    <div className="flex gap-8 overflow-x-auto pb-4">
-      {rounds.map((round, ri) => (
-        <div key={ri} className="flex flex-col items-center">
-          <h4 className="mb-3 text-sm font-semibold text-gray-700">
-            {round.name}
-          </h4>
-          <div className="flex flex-col justify-around gap-4 flex-1">
-            {round.matches.map((match) => (
-              <MatchSlot
-                key={match.id}
-                match={match}
-                roundIndex={ri}
-                teamNames={teamNames}
-                onClick={() => onMatchClick(match, ri)}
-              />
-            ))}
-          </div>
-        </div>
+    <div className="flex flex-col items-center">
+      <h4 className="mb-3 text-sm font-semibold text-gray-700">{name}</h4>
+      <div className="flex flex-col justify-around gap-4 flex-1">
+        {matches.map((match) => (
+          <MatchSlot
+            key={match.id}
+            match={match}
+            roundIndex={roundIndex}
+            teamNames={teamNames}
+            onClick={() => onMatchClick(match, roundIndex)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function BracketView({ rounds, teamNames, onMatchClick }: Props) {
+  if (rounds.length === 0) return null;
+
+  if (rounds.length === 1) {
+    return (
+      <div className="flex justify-center pb-4">
+        <RoundColumn
+          name={rounds[0].name}
+          matches={rounds[0].matches}
+          roundIndex={0}
+          teamNames={teamNames}
+          onMatchClick={onMatchClick}
+        />
+      </div>
+    );
+  }
+
+  const finalRound = rounds[rounds.length - 1];
+  const preRounds = rounds.slice(0, -1);
+
+  const leftColumns = preRounds.map((round, ri) => ({
+    name: round.name,
+    matches: round.matches.slice(0, round.matches.length / 2),
+    roundIndex: ri,
+  }));
+
+  const rightColumns = [...preRounds]
+    .map((round, ri) => ({
+      name: round.name,
+      matches: round.matches.slice(round.matches.length / 2),
+      roundIndex: ri,
+    }))
+    .reverse();
+
+  return (
+    <div className="flex gap-8 overflow-x-auto pb-4 justify-center">
+      {leftColumns.map((col) => (
+        <RoundColumn
+          key={`left-${col.roundIndex}`}
+          name={col.name}
+          matches={col.matches}
+          roundIndex={col.roundIndex}
+          teamNames={teamNames}
+          onMatchClick={onMatchClick}
+        />
+      ))}
+
+      <RoundColumn
+        name={finalRound.name}
+        matches={finalRound.matches}
+        roundIndex={rounds.length - 1}
+        teamNames={teamNames}
+        onMatchClick={onMatchClick}
+      />
+
+      {rightColumns.map((col) => (
+        <RoundColumn
+          key={`right-${col.roundIndex}`}
+          name={col.name}
+          matches={col.matches}
+          roundIndex={col.roundIndex}
+          teamNames={teamNames}
+          onMatchClick={onMatchClick}
+        />
       ))}
     </div>
   );

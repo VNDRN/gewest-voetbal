@@ -6,6 +6,8 @@ import {
 import ScheduleGrid from "../components/ScheduleGrid";
 import type { ScheduledMatch } from "../components/ScheduleGrid";
 import ScoreInput from "../components/ScoreInput";
+import { calculateStandings, rankBestNextPlaced } from "../engine/standings";
+import { seedBracket } from "../engine/knockout";
 
 type Filter = "all" | "mens" | "womens";
 
@@ -35,6 +37,15 @@ export default function SchedulePage() {
           });
         }
       }
+      for (const round of comp.knockoutRounds) {
+        for (const match of round.matches) {
+          matches.push({
+            ...match,
+            competitionId: comp.id,
+            groupName: round.name,
+          });
+        }
+      }
     }
     return matches.sort((a, b) => a.timeSlot - b.timeSlot || a.fieldIndex - b.fieldIndex);
   }, [tournament.competitions]);
@@ -46,6 +57,65 @@ export default function SchedulePage() {
         : allMatches.filter((m) => m.competitionId === filter),
     [allMatches, filter]
   );
+
+  const knockoutStatus = useMemo(
+    () =>
+      tournament.competitions.map((comp) => ({
+        compId: comp.id,
+        compName: comp.name,
+        allPlayed:
+          comp.groups.length > 0 &&
+          comp.groups.every((g) => g.matches.every((m) => m.score !== null)),
+        seeded:
+          comp.knockoutRounds.length > 0 &&
+          comp.knockoutRounds[0].matches.some((m) => m.homeTeamId !== null),
+      })),
+    [tournament.competitions]
+  );
+
+  function generateBracket(compId: string) {
+    const comp = tournament.competitions.find((c) => c.id === compId)!;
+    const qualifyingTeams: { teamId: string; groupId: string }[] = [];
+
+    for (let pos = 0; pos < comp.config.advancingPerGroup; pos++) {
+      for (const group of comp.groups) {
+        const standings = calculateStandings(group.teamIds, group.matches);
+        if (pos < standings.length) {
+          qualifyingTeams.push({
+            teamId: standings[pos].teamId,
+            groupId: group.id,
+          });
+        }
+      }
+    }
+
+    if (comp.config.bestNextPlacedCount > 0) {
+      const nextPlaced = [];
+      for (const group of comp.groups) {
+        const standings = calculateStandings(group.teamIds, group.matches);
+        const row = standings[comp.config.advancingPerGroup];
+        if (row) nextPlaced.push({ ...row, groupId: group.id });
+      }
+      const ranked = rankBestNextPlaced(nextPlaced);
+      for (
+        let i = 0;
+        i < comp.config.bestNextPlacedCount && i < ranked.length;
+        i++
+      ) {
+        const row = ranked[i];
+        const gId = (row as typeof ranked[number] & { groupId: string })
+          .groupId;
+        qualifyingTeams.push({ teamId: row.teamId, groupId: gId });
+      }
+    }
+
+    const seeded = seedBracket(comp.knockoutRounds, qualifyingTeams);
+    dispatch({
+      type: "SET_KNOCKOUT_ROUNDS",
+      competitionId: comp.id,
+      knockoutRounds: seeded,
+    });
+  }
 
   function findMatchGroup(matchId: string): { compId: string; groupId: string } | null {
     for (const comp of tournament.competitions) {
@@ -98,6 +168,24 @@ export default function SchedulePage() {
           onMatchClick={setEditingMatch}
         />
       </div>
+
+      {knockoutStatus.some((s) => !s.seeded) && (
+        <div className="space-y-2">
+          {knockoutStatus.map(
+            (s) =>
+              !s.seeded && (
+                <button
+                  key={s.compId}
+                  onClick={() => generateBracket(s.compId)}
+                  disabled={!s.allPlayed}
+                  className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {s.compName} knock-outfase genereren
+                </button>
+              )
+          )}
+        </div>
+      )}
 
       {editingMatch && (
         <ScoreInput

@@ -4,7 +4,7 @@ import {
   useTournament,
   useTournamentDispatch,
 } from "../context/TournamentContext";
-import type { Competition, Group, Match, Team } from "../types";
+import type { Competition, Group, KnockoutRound, Match, Team } from "../types";
 import {
   getGroupOptions,
   generateRoundRobinMatches,
@@ -12,6 +12,7 @@ import {
   maxAdvancingPerGroup,
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
+import { generateKnockoutRounds } from "../engine/knockout";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -206,18 +207,34 @@ export default function SetupPage() {
   }
 
   const estimatedSlots = useMemo(() => {
-    let totalMatches = 0;
+    let totalGroupMatches = 0;
+    const knockoutMatchesByRound: number[] = [];
+
     for (const comp of tournament.competitions) {
       const opts = getGroupOptions(comp.teams.length);
       if (opts.length === 0) continue;
       const opt = opts.find((o) => o.sizes[0] === comp.config.groupSize);
       if (!opt) continue;
       for (const size of opt.sizes) {
-        totalMatches += (size * (size - 1)) / 2;
+        totalGroupMatches += (size * (size - 1)) / 2;
+      }
+      const bf = calculateBracketFill(opt.groupCount, comp.config.advancingPerGroup);
+      let bracketSize = bf.knockoutSize;
+      let roundIdx = 0;
+      while (bracketSize >= 2) {
+        knockoutMatchesByRound[roundIdx] =
+          (knockoutMatchesByRound[roundIdx] ?? 0) + bracketSize / 2;
+        bracketSize /= 2;
+        roundIdx++;
       }
     }
-    if (totalMatches === 0) return 0;
-    return Math.ceil(totalMatches / tournament.config.fieldCount);
+    if (totalGroupMatches === 0) return 0;
+    const groupSlots = Math.ceil(totalGroupMatches / tournament.config.fieldCount);
+    const knockoutSlots = knockoutMatchesByRound.reduce(
+      (sum, count) => sum + Math.ceil(count / tournament.config.fieldCount),
+      0
+    );
+    return groupSlots + knockoutSlots;
   }, [tournament.competitions, tournament.config.fieldCount]);
 
   function handleGenerate() {
@@ -276,6 +293,8 @@ export default function SetupPage() {
     const scheduledMap = new Map<string, Match>();
     for (const m of scheduled) scheduledMap.set(m.id, m);
 
+    const knockoutRoundsPerComp = new Map<string, KnockoutRound[]>();
+
     for (const [compId, groups] of groupsPerComp) {
       const finalGroups = groups.map((g) => {
         const groupMatches = allMatches
@@ -287,19 +306,12 @@ export default function SetupPage() {
 
       dispatch({ type: "SET_GROUPS", competitionId: compId, groups: finalGroups });
 
-      const opt = getGroupOptions(
-        tournament.competitions.find((c) => c.id === compId)!.teams.length
-      ).find(
-        (o) =>
-          o.sizes[0] ===
-          tournament.competitions.find((c) => c.id === compId)!.config.groupSize
+      const comp = tournament.competitions.find((c) => c.id === compId)!;
+      const opt = getGroupOptions(comp.teams.length).find(
+        (o) => o.sizes[0] === comp.config.groupSize
       );
       if (opt) {
-        const bf = calculateBracketFill(
-          opt.groupCount,
-          tournament.competitions.find((c) => c.id === compId)!.config
-            .advancingPerGroup
-        );
+        const bf = calculateBracketFill(opt.groupCount, comp.config.advancingPerGroup);
         dispatch({
           type: "UPDATE_COMPETITION_CONFIG",
           competitionId: compId,
@@ -308,7 +320,40 @@ export default function SetupPage() {
             bestNextPlacedCount: bf.bestNextPlacedCount,
           },
         });
+        knockoutRoundsPerComp.set(compId, generateKnockoutRounds(bf.knockoutSize));
       }
+    }
+
+    const maxGroupSlot = scheduled.reduce((max, m) => Math.max(max, m.timeSlot), -1);
+    let nextSlot = maxGroupSlot + 1;
+    const maxRoundCount = Math.max(
+      ...Array.from(knockoutRoundsPerComp.values()).map((r) => r.length),
+      0
+    );
+
+    for (let roundIdx = 0; roundIdx < maxRoundCount; roundIdx++) {
+      let fieldIdx = 0;
+      for (const [, rounds] of knockoutRoundsPerComp) {
+        if (roundIdx >= rounds.length) continue;
+        for (const match of rounds[roundIdx].matches) {
+          match.fieldIndex = fieldIdx;
+          match.timeSlot = nextSlot;
+          fieldIdx++;
+          if (fieldIdx >= tournament.config.fieldCount) {
+            fieldIdx = 0;
+            nextSlot++;
+          }
+        }
+      }
+      if (fieldIdx > 0) nextSlot++;
+    }
+
+    for (const [compId, rounds] of knockoutRoundsPerComp) {
+      dispatch({
+        type: "SET_KNOCKOUT_ROUNDS",
+        competitionId: compId,
+        knockoutRounds: rounds,
+      });
     }
 
     navigate("/groups");

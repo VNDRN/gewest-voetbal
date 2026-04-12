@@ -1,10 +1,42 @@
 import { describe, it, expect } from "vitest";
 import {
+  bracketSeeds,
   generateKnockoutRounds,
   seedBracket,
   advanceWinner,
 } from "../../engine/knockout";
 import type { KnockoutRound } from "../../types";
+
+describe("bracketSeeds", () => {
+  it("returns [1, 2] for size 2", () => {
+    expect(bracketSeeds(2)).toEqual([1, 2]);
+  });
+
+  it("returns [1, 4, 2, 3] for size 4", () => {
+    expect(bracketSeeds(4)).toEqual([1, 4, 2, 3]);
+  });
+
+  it("returns proper fold for size 8", () => {
+    expect(bracketSeeds(8)).toEqual([1, 8, 4, 5, 2, 7, 3, 6]);
+  });
+
+  it("contains every seed exactly once", () => {
+    for (const size of [2, 4, 8, 16, 32]) {
+      const seeds = bracketSeeds(size);
+      expect(seeds).toHaveLength(size);
+      expect(new Set(seeds).size).toBe(size);
+    }
+  });
+
+  it("pairs sum to size + 1", () => {
+    for (const size of [2, 4, 8, 16]) {
+      const seeds = bracketSeeds(size);
+      for (let i = 0; i < seeds.length; i += 2) {
+        expect(seeds[i] + seeds[i + 1]).toBe(size + 1);
+      }
+    }
+  });
+});
 
 describe("generateKnockoutRounds", () => {
   describe("bracket size 2 (Final only)", () => {
@@ -40,13 +72,13 @@ describe("generateKnockoutRounds", () => {
       expect(rounds[1].name).toBe("Finale");
     });
 
-    it("first-round matches have seed descriptions", () => {
+    it("first-round matches have bracket-folded seed descriptions", () => {
       const rounds = generateKnockoutRounds(4);
       const [m0, m1] = rounds[0].matches;
       expect(m0.homeSourceDescription).toBe("Positie 1");
-      expect(m0.awaySourceDescription).toBe("Positie 2");
-      expect(m1.homeSourceDescription).toBe("Positie 3");
-      expect(m1.awaySourceDescription).toBe("Positie 4");
+      expect(m0.awaySourceDescription).toBe("Positie 4");
+      expect(m1.homeSourceDescription).toBe("Positie 2");
+      expect(m1.awaySourceDescription).toBe("Positie 3");
     });
 
     it("final references winners from semis", () => {
@@ -75,16 +107,18 @@ describe("generateKnockoutRounds", () => {
       expect(rounds[2].name).toBe("Finale");
     });
 
-    it("first-round matches have seed descriptions 1-8", () => {
+    it("first-round matches have bracket-folded seed descriptions", () => {
       const rounds = generateKnockoutRounds(8);
-      for (let i = 0; i < 4; i++) {
-        expect(rounds[0].matches[i].homeSourceDescription).toBe(
-          `Positie ${i * 2 + 1}`
-        );
-        expect(rounds[0].matches[i].awaySourceDescription).toBe(
-          `Positie ${i * 2 + 2}`
-        );
-      }
+      const descs = rounds[0].matches.map((m) => [
+        m.homeSourceDescription,
+        m.awaySourceDescription,
+      ]);
+      expect(descs).toEqual([
+        ["Positie 1", "Positie 8"],
+        ["Positie 4", "Positie 5"],
+        ["Positie 2", "Positie 7"],
+        ["Positie 3", "Positie 6"],
+      ]);
     });
 
     it("semi-finals reference QF match winners", () => {
@@ -135,16 +169,22 @@ describe("generateKnockoutRounds", () => {
       expect(rounds[3].name).toBe("Finale");
     });
 
-    it("first-round matches have seed descriptions 1-16", () => {
+    it("first-round matches have bracket-folded seed descriptions", () => {
       const rounds = generateKnockoutRounds(16);
-      for (let i = 0; i < 8; i++) {
-        expect(rounds[0].matches[i].homeSourceDescription).toBe(
-          `Positie ${i * 2 + 1}`
-        );
-        expect(rounds[0].matches[i].awaySourceDescription).toBe(
-          `Positie ${i * 2 + 2}`
-        );
-      }
+      const descs = rounds[0].matches.map((m) => [
+        m.homeSourceDescription,
+        m.awaySourceDescription,
+      ]);
+      expect(descs).toEqual([
+        ["Positie 1", "Positie 16"],
+        ["Positie 8", "Positie 9"],
+        ["Positie 4", "Positie 13"],
+        ["Positie 5", "Positie 12"],
+        ["Positie 2", "Positie 15"],
+        ["Positie 7", "Positie 10"],
+        ["Positie 3", "Positie 14"],
+        ["Positie 6", "Positie 11"],
+      ]);
     });
   });
 
@@ -383,6 +423,27 @@ describe("seedBracket", () => {
       const teams = makeTeams([
         { groupId: "A", count: 2 },
         { groupId: "B", count: 2 },
+        { groupId: "C", count: 2 },
+      ]);
+      const seeded = seedBracket(rounds, teams);
+      for (const match of seeded[0].matches) {
+        if (match.homeTeamId && match.awayTeamId) {
+          const homeGroup = teams.find(
+            (t) => t.teamId === match.homeTeamId
+          )!.groupId;
+          const awayGroup = teams.find(
+            (t) => t.teamId === match.awayTeamId
+          )!.groupId;
+          expect(homeGroup).not.toBe(awayGroup);
+        }
+      }
+    });
+
+    it("8 teams from 3 groups (3+3+2): no same-group matchup after swap", () => {
+      const rounds = generateKnockoutRounds(8);
+      const teams = makeTeams([
+        { groupId: "A", count: 3 },
+        { groupId: "B", count: 3 },
         { groupId: "C", count: 2 },
       ]);
       const seeded = seedBracket(rounds, teams);
@@ -1073,7 +1134,7 @@ describe("additional edge cases", () => {
       ];
       const seeded = seedBracket(rounds, teams);
       expect(seeded[0].matches[0].homeSourceDescription).toBe("Positie 1");
-      expect(seeded[0].matches[0].awaySourceDescription).toBe("Positie 2");
+      expect(seeded[0].matches[0].awaySourceDescription).toBe("Positie 4");
       expect(seeded[1].matches[0].homeSourceDescription).toMatch(
         /^Winnaar ko-\d+$/
       );

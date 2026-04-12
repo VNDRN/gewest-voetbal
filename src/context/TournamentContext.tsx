@@ -248,12 +248,14 @@ export function TournamentProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTournament(): Tournament {
   const ctx = useContext(TournamentContext);
   if (!ctx) throw new Error("useTournament must be used within TournamentProvider");
   return ctx;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTournamentDispatch(): Dispatch<TournamentAction> {
   const ctx = useContext(TournamentDispatchContext);
   if (!ctx)

@@ -41,6 +41,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   const bracketFill = useMemo(
     () =>
       calculateBracketFill(groupCount, competition.config.advancingPerGroup),
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     [groupCount, competition.config.advancingPerGroup]
   );
 

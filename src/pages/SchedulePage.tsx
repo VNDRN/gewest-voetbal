@@ -206,8 +206,8 @@ export default function SchedulePage() {
 
       {editingMatch && (
         <ScoreInput
-          homeTeam={teamNames.get(editingMatch.homeTeamId) ?? "Thuis"}
-          awayTeam={teamNames.get(editingMatch.awayTeamId) ?? "Uit"}
+          homeTeam={teamNames.get(editingMatch.homeTeamId ?? "") ?? "Thuis"}
+          awayTeam={teamNames.get(editingMatch.awayTeamId ?? "") ?? "Uit"}
           initialScore={editingMatch.score}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {

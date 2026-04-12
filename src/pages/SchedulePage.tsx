@@ -7,7 +7,7 @@ import ScheduleGrid from "../components/ScheduleGrid";
 import type { ScheduledMatch } from "../components/ScheduleGrid";
 import ScoreInput from "../components/ScoreInput";
 import { calculateStandings, rankBestNextPlaced } from "../engine/standings";
-import { seedBracket } from "../engine/knockout";
+import { seedBracket, advanceWinner } from "../engine/knockout";
 
 type Filter = "all" | "mens" | "womens";
 
@@ -128,6 +128,17 @@ export default function SchedulePage() {
     return null;
   }
 
+  function findMatchKnockout(matchId: string): { compId: string; roundIndex: number } | null {
+    for (const comp of tournament.competitions) {
+      for (let ri = 0; ri < comp.knockoutRounds.length; ri++) {
+        if (comp.knockoutRounds[ri].matches.some((m) => m.id === matchId)) {
+          return { compId: comp.id, roundIndex: ri };
+        }
+      }
+    }
+    return null;
+  }
+
   if (allMatches.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
@@ -211,15 +222,45 @@ export default function SchedulePage() {
           initialScore={editingMatch.score}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {
-            const loc = findMatchGroup(editingMatch.id);
-            if (loc) {
-              dispatch({
-                type: "SET_SCORE",
-                competitionId: loc.compId,
-                groupId: loc.groupId,
-                matchId: editingMatch.id,
-                score,
-              });
+            if (editingMatch.phase === "knockout") {
+              const loc = findMatchKnockout(editingMatch.id);
+              if (loc) {
+                const comp = tournament.competitions.find((c) => c.id === loc.compId)!;
+                dispatch({
+                  type: "SET_KNOCKOUT_SCORE",
+                  competitionId: loc.compId,
+                  roundIndex: loc.roundIndex,
+                  matchId: editingMatch.id,
+                  score,
+                });
+                const updatedRounds = comp.knockoutRounds.map((r, ri) =>
+                  ri === loc.roundIndex
+                    ? {
+                        ...r,
+                        matches: r.matches.map((m) =>
+                          m.id === editingMatch.id ? { ...m, score } : m
+                        ),
+                      }
+                    : r
+                );
+                const advanced = advanceWinner(updatedRounds, editingMatch.id);
+                dispatch({
+                  type: "SET_KNOCKOUT_ROUNDS",
+                  competitionId: loc.compId,
+                  knockoutRounds: advanced,
+                });
+              }
+            } else {
+              const loc = findMatchGroup(editingMatch.id);
+              if (loc) {
+                dispatch({
+                  type: "SET_SCORE",
+                  competitionId: loc.compId,
+                  groupId: loc.groupId,
+                  matchId: editingMatch.id,
+                  score,
+                });
+              }
             }
             setEditingMatch(null);
           }}

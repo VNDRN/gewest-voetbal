@@ -54,13 +54,20 @@ export type DraftGroup = {
   teamIds: string[];
 };
 
+export type Score = {
+  home: number;
+  away: number;
+  penHome?: number;
+  penAway?: number;
+};
+
 export type Match = {
   id: string;
   homeTeamId: string;
   awayTeamId: string;
   fieldIndex: number;
   timeSlot: number;
-  score: { home: number; away: number } | null;
+  score: Score | null;
   phase: "group" | "knockout";
 };
 

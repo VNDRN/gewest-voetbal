@@ -6,10 +6,17 @@ export type Tournament = {
   competitions: [Competition, Competition];
 };
 
+export type ScheduleBreak = {
+  id: string;
+  afterTimeSlot: number;
+  durationMinutes: number;
+};
+
 export type TournamentConfig = {
   fieldCount: number;
   slotDurationMinutes: number;
   startTime: string;
+  breaks: ScheduleBreak[];
 };
 
 export type Competition = {

@@ -106,7 +106,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Groepsgrootte
+              Groepsindeling
             </label>
             <select
               value={competition.config.groupSize}
@@ -119,9 +119,9 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
               }
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
-              {[3, 4, 5].map((s) => (
-                <option key={s} value={s}>
-                  {s} teams per groep
+              {groupOptions.map((o) => (
+                <option key={o.sizes[0]} value={o.sizes[0]}>
+                  {o.groupCount} groepen ({o.label})
                 </option>
               ))}
             </select>
@@ -155,10 +155,6 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
 
       {groupOptions.length > 0 && (
         <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-          <p>
-            <strong>Groepen:</strong>{" "}
-            {groupOptions.map((o) => o.label).join(" / ")}
-          </p>
           <p>
             <strong>Knock-out:</strong> {bracketFill.knockoutSize} teams
             {bracketFill.bestNextPlacedCount > 0 && (

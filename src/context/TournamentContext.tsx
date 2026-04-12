@@ -58,6 +58,11 @@ export type TournamentAction =
       competitionId: string;
       config: Partial<CompetitionConfig>;
     }
+  | {
+      type: "SET_TEAM_GROUPS";
+      competitionId: string;
+      teamGroups: Record<string, string>;
+    }
   | { type: "SET_GROUPS"; competitionId: string; groups: Group[] }
   | {
       type: "SET_SCORE";
@@ -126,6 +131,15 @@ function tournamentReducer(
       return updateCompetition(state, action.competitionId, (c) => ({
         ...c,
         config: { ...c.config, ...action.config },
+      }));
+
+    case "SET_TEAM_GROUPS":
+      return updateCompetition(state, action.competitionId, (c) => ({
+        ...c,
+        teams: c.teams.map((t) => ({
+          ...t,
+          groupId: action.teamGroups[t.id] ?? t.groupId,
+        })),
       }));
 
     case "SET_GROUPS":

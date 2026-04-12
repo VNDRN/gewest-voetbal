@@ -230,6 +230,7 @@ export default function SetupPage() {
         opts.find((o) => o.sizes[0] === comp.config.groupSize) ?? opts[0];
       const shuffled = shuffle(comp.teams);
       const groups: Group[] = [];
+      const teamGroups: Record<string, string> = {};
       let teamIdx = 0;
 
       for (let g = 0; g < opt.groupCount; g++) {
@@ -239,16 +240,7 @@ export default function SetupPage() {
         teamIdx += groupSize;
 
         for (const t of groupTeams) {
-          dispatch({
-            type: "REMOVE_TEAM",
-            competitionId: comp.id,
-            teamId: t.id,
-          });
-          dispatch({
-            type: "ADD_TEAM",
-            competitionId: comp.id,
-            team: { ...t, groupId },
-          });
+          teamGroups[t.id] = groupId;
         }
 
         const teamIds = groupTeams.map((t) => t.id);
@@ -266,6 +258,11 @@ export default function SetupPage() {
         });
       }
 
+      dispatch({
+        type: "SET_TEAM_GROUPS",
+        competitionId: comp.id,
+        teamGroups,
+      });
       groupsPerComp.set(comp.id, groups);
     }
 

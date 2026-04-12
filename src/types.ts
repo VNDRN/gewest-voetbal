@@ -48,6 +48,12 @@ export type Group = {
   matches: Match[];
 };
 
+export type DraftGroup = {
+  id: string;
+  name: string;
+  teamIds: string[];
+};
+
 export type Match = {
   id: string;
   homeTeamId: string;

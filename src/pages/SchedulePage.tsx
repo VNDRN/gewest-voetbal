@@ -220,6 +220,7 @@ export default function SchedulePage() {
           homeTeam={teamNames.get(editingMatch.homeTeamId ?? "") ?? "Thuis"}
           awayTeam={teamNames.get(editingMatch.awayTeamId ?? "") ?? "Uit"}
           initialScore={editingMatch.score}
+          isKnockout={editingMatch.phase === "knockout"}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {
             if (editingMatch.phase === "knockout") {

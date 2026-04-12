@@ -65,12 +65,18 @@ export default function KnockoutPage() {
         if (rounds.length > 0) {
           const final = rounds[rounds.length - 1].matches[0];
           if (final?.score) {
-            const winnerId =
-              final.score.home > final.score.away
-                ? final.homeTeamId
-                : final.score.away > final.score.home
-                  ? final.awayTeamId
-                  : final.homeTeamId;
+            let winnerId: string | null;
+            if (final.score.home > final.score.away) {
+              winnerId = final.homeTeamId;
+            } else if (final.score.away > final.score.home) {
+              winnerId = final.awayTeamId;
+            } else if (final.score.penHome != null && final.score.penAway != null && final.score.penHome > final.score.penAway) {
+              winnerId = final.homeTeamId;
+            } else if (final.score.penHome != null && final.score.penAway != null && final.score.penAway > final.score.penHome) {
+              winnerId = final.awayTeamId;
+            } else {
+              winnerId = null;
+            }
             champion = winnerId
               ? (teamNames.get(winnerId) ?? winnerId)
               : null;
@@ -138,6 +144,7 @@ export default function KnockoutPage() {
                 : "Uit"
             }
             initialScore={editingMatch.match.score}
+            isKnockout
             onClose={() => setEditingMatch(null)}
             onSave={(score) => {
               dispatch({

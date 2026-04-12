@@ -207,14 +207,14 @@ export default function ScheduleGrid({
                       colSpan={fieldCount + 1}
                       className="border-0 p-0"
                     >
-                      <div className="relative flex h-0 items-center justify-center overflow-visible">
-                        <button
-                          onClick={() => onAddBreak(slot)}
-                          className="absolute z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-xs text-gray-500 opacity-0 shadow-sm transition-opacity hover:bg-gray-200 group-hover/add:opacity-100"
-                        >
+                      <button
+                        onClick={() => onAddBreak(slot)}
+                        className="flex h-6 w-full cursor-pointer items-center justify-center transition-colors hover:bg-gray-50"
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-xs text-gray-500 opacity-0 shadow-sm transition-opacity group-hover/add:opacity-100">
                           +
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     </td>
                   </tr>
                 )}

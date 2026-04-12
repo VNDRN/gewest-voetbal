@@ -3,6 +3,7 @@ import {
   getGroupOptions,
   generateRoundRobinMatches,
   calculateBracketFill,
+  maxAdvancingPerGroup,
 } from "../../engine/groups";
 
 describe("getGroupOptions", () => {
@@ -538,5 +539,54 @@ describe("calculateBracketFill", () => {
         }
       }
     });
+  });
+});
+
+describe("maxAdvancingPerGroup", () => {
+  it("returns smallest group size minus 1", () => {
+    expect(maxAdvancingPerGroup([4, 3, 3])).toBe(2);
+    expect(maxAdvancingPerGroup([5, 5])).toBe(4);
+    expect(maxAdvancingPerGroup([3, 3, 3])).toBe(2);
+    expect(maxAdvancingPerGroup([4, 4, 4, 4])).toBe(3);
+    expect(maxAdvancingPerGroup([5, 4, 4])).toBe(3);
+  });
+
+  it("returns at least 1 for any valid group", () => {
+    expect(maxAdvancingPerGroup([3])).toBe(2);
+    expect(maxAdvancingPerGroup([3, 3])).toBe(2);
+  });
+
+  it("returns 0 for empty sizes", () => {
+    expect(maxAdvancingPerGroup([])).toBe(0);
+  });
+
+  it("10 teams, 3 groups (1x4 + 2x3): max advancing is 2, not 3", () => {
+    const options = getGroupOptions(10);
+    const mixed = options.find((o) => o.groupCount === 3)!;
+    expect(mixed.sizes).toEqual([4, 3, 3]);
+    expect(maxAdvancingPerGroup(mixed.sizes)).toBe(2);
+  });
+});
+
+describe("qualifying count never exceeds team count", () => {
+  it("for all team counts 6-24, no valid config produces more qualifiers than teams", () => {
+    for (let teamCount = 6; teamCount <= 24; teamCount++) {
+      const options = getGroupOptions(teamCount);
+      for (const opt of options) {
+        const maxAdv = maxAdvancingPerGroup(opt.sizes);
+        for (let adv = 1; adv <= maxAdv; adv++) {
+          const fill = calculateBracketFill(opt.groupCount, adv);
+          const totalQualifying =
+            opt.groupCount * adv + fill.bestNextPlacedCount;
+          expect(totalQualifying).toBeLessThanOrEqual(teamCount);
+        }
+      }
+    }
+  });
+
+  it("10 teams, 3 groups (1x4 + 2x3), Top 2: qualifying fits", () => {
+    const fill = calculateBracketFill(3, 2);
+    const totalQualifying = 3 * 2 + fill.bestNextPlacedCount;
+    expect(totalQualifying).toBeLessThanOrEqual(10);
   });
 });

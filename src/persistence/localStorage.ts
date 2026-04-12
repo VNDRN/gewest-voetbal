@@ -6,11 +6,21 @@ export function saveState(state: Tournament): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+const COMPETITION_NAME_MAP: Record<string, string> = {
+  "Men's": "Heren",
+  "Women's": "Dames",
+};
+
 export function loadState(): Tournament | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as Tournament;
+    const state = JSON.parse(raw) as Tournament;
+    state.competitions = state.competitions.map((c) => ({
+      ...c,
+      name: COMPETITION_NAME_MAP[c.name] ?? c.name,
+    })) as Tournament["competitions"];
+    return state;
   } catch {
     return null;
   }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useTournament,
   useTournamentDispatch,
@@ -8,6 +8,7 @@ import {
   getGroupOptions,
   generateRoundRobinMatches,
   calculateBracketFill,
+  maxAdvancingPerGroup,
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
 
@@ -56,7 +57,19 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
     dispatch({ type: "REMOVE_TEAM", competitionId: competition.id, teamId });
   }
 
-  const maxAdvancing = Math.max(1, (selectedOption?.sizes[0] ?? 4) - 1);
+  const maxAdvancing = selectedOption
+    ? maxAdvancingPerGroup(selectedOption.sizes)
+    : 1;
+
+  useEffect(() => {
+    if (competition.config.advancingPerGroup > maxAdvancing) {
+      dispatch({
+        type: "UPDATE_COMPETITION_CONFIG",
+        competitionId: competition.id,
+        config: { advancingPerGroup: maxAdvancing },
+      });
+    }
+  }, [maxAdvancing, competition.config.advancingPerGroup, competition.id, dispatch]);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -72,14 +85,14 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addTeam()}
-            placeholder="Team name"
+            placeholder="Teamnaam"
             className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           />
           <button
             onClick={addTeam}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
-            Add
+            Toevoegen
           </button>
         </div>
         {competition.teams.length > 0 && (
@@ -106,7 +119,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Group Size
+              Groepsindeling
             </label>
             <select
               value={competition.config.groupSize}
@@ -119,16 +132,16 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
               }
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
-              {[3, 4, 5].map((s) => (
-                <option key={s} value={s}>
-                  {s} teams per group
+              {groupOptions.map((o) => (
+                <option key={o.sizes[0]} value={o.sizes[0]}>
+                  {o.groupCount} groepen ({o.label})
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Advancing per Group
+              Doorgang per groep
             </label>
             <select
               value={competition.config.advancingPerGroup}
@@ -156,21 +169,21 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
       {groupOptions.length > 0 && (
         <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
           <p>
-            <strong>Groups:</strong>{" "}
-            {groupOptions.map((o) => o.label).join(" / ")}
-          </p>
-          <p>
-            <strong>Bracket:</strong> {bracketFill.knockoutSize} teams
+            <strong>Knock-out:</strong>{" "}
+            {groupCount * competition.config.advancingPerGroup +
+              bracketFill.bestNextPlacedCount}{" "}
+            teams (top {competition.config.advancingPerGroup}
             {bracketFill.bestNextPlacedCount > 0 && (
-              <> + {bracketFill.bestNextPlacedCount} best next-placed</>
+              <> + {bracketFill.bestNextPlacedCount} beste volgende</>
             )}
+            )
           </p>
         </div>
       )}
 
       {competition.teams.length > 0 && groupOptions.length === 0 && (
         <p className="mt-3 text-sm text-amber-600">
-          Need at least 6 teams for group options.
+          Minstens 6 teams nodig voor groepsopties.
         </p>
       )}
     </div>
@@ -217,6 +230,7 @@ export default function SetupPage() {
         opts.find((o) => o.sizes[0] === comp.config.groupSize) ?? opts[0];
       const shuffled = shuffle(comp.teams);
       const groups: Group[] = [];
+      const teamGroups: Record<string, string> = {};
       let teamIdx = 0;
 
       for (let g = 0; g < opt.groupCount; g++) {
@@ -226,16 +240,7 @@ export default function SetupPage() {
         teamIdx += groupSize;
 
         for (const t of groupTeams) {
-          dispatch({
-            type: "REMOVE_TEAM",
-            competitionId: comp.id,
-            teamId: t.id,
-          });
-          dispatch({
-            type: "ADD_TEAM",
-            competitionId: comp.id,
-            team: { ...t, groupId },
-          });
+          teamGroups[t.id] = groupId;
         }
 
         const teamIds = groupTeams.map((t) => t.id);
@@ -247,12 +252,17 @@ export default function SetupPage() {
 
         groups.push({
           id: groupId,
-          name: `Group ${String.fromCharCode(65 + g)}`,
+          name: `Groep ${String.fromCharCode(65 + g)}`,
           teamIds,
           matches: [],
         });
       }
 
+      dispatch({
+        type: "SET_TEAM_GROUPS",
+        competitionId: comp.id,
+        teamGroups,
+      });
       groupsPerComp.set(comp.id, groups);
     }
 
@@ -307,11 +317,11 @@ export default function SetupPage() {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-semibold">Tournament Settings</h2>
+        <h2 className="mb-4 text-lg font-semibold">Toernooi-instellingen</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           <div className="col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Name
+              Naam
             </label>
             <input
               type="text"
@@ -324,7 +334,7 @@ export default function SetupPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Date
+              Datum
             </label>
             <input
               type="date"
@@ -337,7 +347,7 @@ export default function SetupPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Fields
+              Velden
             </label>
             <input
               type="number"
@@ -355,7 +365,7 @@ export default function SetupPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Slot (min)
+              Tijdslot (min)
             </label>
             <input
               type="number"
@@ -375,7 +385,7 @@ export default function SetupPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Start Time
+              Starttijd
             </label>
             <input
               type="time"
@@ -400,7 +410,7 @@ export default function SetupPage() {
 
       {estimatedSlots > 0 && (
         <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-          Estimated: {estimatedSlots} time slots ({formatTime(0)} -{" "}
+          Geschat: {estimatedSlots} tijdsloten ({formatTime(0)} -{" "}
           {formatTime(estimatedSlots)})
         </div>
       )}
@@ -410,7 +420,7 @@ export default function SetupPage() {
         disabled={!canGenerate}
         className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
       >
-        Generate Schedule & Draw Groups
+        Schema genereren & groepen loten
       </button>
     </div>
   );

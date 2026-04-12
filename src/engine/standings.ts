@@ -94,10 +94,18 @@ export function calculateStandings(
 
 export function rankBestNextPlaced(rows: StandingRow[]): StandingRow[] {
   return [...rows].sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.goalDifference !== a.goalDifference)
-      return b.goalDifference - a.goalDifference;
-    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+    const ap = a.played || 1;
+    const bp = b.played || 1;
+
+    const ppmDiff = b.points * ap - a.points * bp;
+    if (ppmDiff !== 0) return ppmDiff;
+
+    const gdpmDiff = b.goalDifference * ap - a.goalDifference * bp;
+    if (gdpmDiff !== 0) return gdpmDiff;
+
+    const gfpmDiff = b.goalsFor * ap - a.goalsFor * bp;
+    if (gfpmDiff !== 0) return gfpmDiff;
+
     return 0;
   });
 }

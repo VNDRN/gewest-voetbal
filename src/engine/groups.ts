@@ -95,3 +95,8 @@ export function calculateBracketFill(
 
   return { knockoutSize, bestNextPlacedCount };
 }
+
+export function maxAdvancingPerGroup(sizes: number[]): number {
+  if (sizes.length === 0) return 0;
+  return Math.max(1, Math.min(...sizes) - 1);
+}

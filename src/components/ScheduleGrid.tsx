@@ -48,14 +48,14 @@ export default function ScheduleGrid({
         <thead>
           <tr>
             <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500">
-              Time
+              Tijd
             </th>
             {Array.from({ length: fieldCount }, (_, i) => (
               <th
                 key={i}
                 className="border border-gray-200 bg-gray-50 px-3 py-2 text-center text-xs font-medium text-gray-500"
               >
-                Field {i + 1}
+                Veld {i + 1}
               </th>
             ))}
           </tr>

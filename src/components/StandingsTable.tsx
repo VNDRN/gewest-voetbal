@@ -25,14 +25,14 @@ export default function StandingsTable({
         <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
           <th className="py-2 pr-2">#</th>
           <th className="py-2 pr-2">Team</th>
-          <th className="py-2 pr-2 text-center">P</th>
+          <th className="py-2 pr-2 text-center">GS</th>
           <th className="py-2 pr-2 text-center">W</th>
-          <th className="py-2 pr-2 text-center">D</th>
-          <th className="py-2 pr-2 text-center">L</th>
-          <th className="py-2 pr-2 text-center">GF</th>
-          <th className="py-2 pr-2 text-center">GA</th>
-          <th className="py-2 pr-2 text-center">GD</th>
-          <th className="py-2 text-center font-bold">Pts</th>
+          <th className="py-2 pr-2 text-center">G</th>
+          <th className="py-2 pr-2 text-center">V</th>
+          <th className="py-2 pr-2 text-center">DV</th>
+          <th className="py-2 pr-2 text-center">DT</th>
+          <th className="py-2 pr-2 text-center">DS</th>
+          <th className="py-2 text-center font-bold">Ptn</th>
         </tr>
       </thead>
       <tbody>

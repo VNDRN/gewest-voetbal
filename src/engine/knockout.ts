@@ -1,11 +1,11 @@
 import type { KnockoutMatch, KnockoutRound } from "../types";
 
 const ROUND_NAMES: Record<number, string> = {
-  32: "Round of 32",
-  16: "Round of 16",
-  8: "Quarter-final",
-  4: "Semi-final",
-  2: "Final",
+  32: "32ste finales",
+  16: "Achtste finales",
+  8: "Kwartfinale",
+  4: "Halve finale",
+  2: "Finale",
 };
 
 function deepCloneRounds(rounds: KnockoutRound[]): KnockoutRound[] {
@@ -22,7 +22,7 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
 
   while (currentSize >= 2) {
     const matchCount = currentSize / 2;
-    const roundName = ROUND_NAMES[currentSize] ?? `Round of ${currentSize}`;
+    const roundName = ROUND_NAMES[currentSize] ?? `Ronde van ${currentSize}`;
     const matches: KnockoutMatch[] = [];
 
     for (let i = 0; i < matchCount; i++) {
@@ -37,8 +37,8 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
         timeSlot: -1,
         score: null,
         phase: "knockout",
-        homeSourceDescription: isFirstRound ? `Seed ${i * 2 + 1}` : "",
-        awaySourceDescription: isFirstRound ? `Seed ${i * 2 + 2}` : "",
+        homeSourceDescription: isFirstRound ? `Positie ${i * 2 + 1}` : "",
+        awaySourceDescription: isFirstRound ? `Positie ${i * 2 + 2}` : "",
       });
     }
 
@@ -51,9 +51,9 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
     const prevMatches = rounds[r - 1].matches;
     for (let i = 0; i < rounds[r].matches.length; i++) {
       rounds[r].matches[i].homeSourceDescription =
-        `Winner ${prevMatches[i * 2].id}`;
+        `Winnaar ${prevMatches[i * 2].id}`;
       rounds[r].matches[i].awaySourceDescription =
-        `Winner ${prevMatches[i * 2 + 1].id}`;
+        `Winnaar ${prevMatches[i * 2 + 1].id}`;
     }
   }
 

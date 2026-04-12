@@ -4,8 +4,8 @@ type Props = {
 };
 
 const COMPETITIONS = [
-  { id: "mens", label: "Men's" },
-  { id: "womens", label: "Women's" },
+  { id: "mens", label: "Heren" },
+  { id: "womens", label: "Dames" },
 ] as const;
 
 export default function CompetitionToggle({ activeId, onChange }: Props) {

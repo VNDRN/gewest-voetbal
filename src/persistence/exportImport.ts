@@ -10,18 +10,18 @@ export function parseImportedJson(json: string): Tournament {
   try {
     parsed = JSON.parse(json);
   } catch {
-    throw new Error("Invalid JSON");
+    throw new Error("Ongeldig JSON");
   }
 
   const t = parsed as Record<string, unknown>;
-  if (!t || typeof t !== "object") throw new Error("Invalid tournament data");
-  if (typeof t.id !== "string") throw new Error("Missing field: id");
-  if (typeof t.name !== "string") throw new Error("Missing field: name");
-  if (typeof t.date !== "string") throw new Error("Missing field: date");
+  if (!t || typeof t !== "object") throw new Error("Ongeldige toernooigegevens");
+  if (typeof t.id !== "string") throw new Error("Ontbrekend veld: id");
+  if (typeof t.name !== "string") throw new Error("Ontbrekend veld: name");
+  if (typeof t.date !== "string") throw new Error("Ontbrekend veld: date");
   if (!t.config || typeof t.config !== "object")
-    throw new Error("Missing field: config");
+    throw new Error("Ontbrekend veld: config");
   if (!Array.isArray(t.competitions) || t.competitions.length !== 2)
-    throw new Error("Missing field: competitions");
+    throw new Error("Ontbrekend veld: competitions");
 
   return parsed as Tournament;
 }
@@ -63,7 +63,7 @@ function formatTime(
 
 export function exportMatchesCsv(tournament: Tournament): string {
   const header =
-    "Competition,Phase,Group,Home,Away,HomeScore,AwayScore,Field,Time";
+    "Competitie,Fase,Groep,Thuis,Uit,ThuisScore,UitScore,Veld,Tijd";
   const rows: string[] = [header];
 
   for (const comp of tournament.competitions) {
@@ -127,7 +127,7 @@ export function exportMatchesCsv(tournament: Tournament): string {
 
 export function exportStandingsCsv(tournament: Tournament): string {
   const header =
-    "Competition,Group,Position,Team,P,W,D,L,GF,GA,GD,Pts";
+    "Competitie,Groep,Positie,Team,GS,W,G,V,DV,DT,DS,Ptn";
   const rows: string[] = [header];
 
   for (const comp of tournament.competitions) {

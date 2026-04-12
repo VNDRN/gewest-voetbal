@@ -16,13 +16,13 @@ describe("generateKnockoutRounds", () => {
 
     it("names the round 'Final'", () => {
       const rounds = generateKnockoutRounds(2);
-      expect(rounds[0].name).toBe("Final");
+      expect(rounds[0].name).toBe("Finale");
     });
 
     it("first-round match has Seed source descriptions", () => {
       const rounds = generateKnockoutRounds(2);
-      expect(rounds[0].matches[0].homeSourceDescription).toBe("Seed 1");
-      expect(rounds[0].matches[0].awaySourceDescription).toBe("Seed 2");
+      expect(rounds[0].matches[0].homeSourceDescription).toBe("Positie 1");
+      expect(rounds[0].matches[0].awaySourceDescription).toBe("Positie 2");
     });
   });
 
@@ -36,17 +36,17 @@ describe("generateKnockoutRounds", () => {
 
     it("names rounds Semi-final and Final", () => {
       const rounds = generateKnockoutRounds(4);
-      expect(rounds[0].name).toBe("Semi-final");
-      expect(rounds[1].name).toBe("Final");
+      expect(rounds[0].name).toBe("Halve finale");
+      expect(rounds[1].name).toBe("Finale");
     });
 
     it("first-round matches have seed descriptions", () => {
       const rounds = generateKnockoutRounds(4);
       const [m0, m1] = rounds[0].matches;
-      expect(m0.homeSourceDescription).toBe("Seed 1");
-      expect(m0.awaySourceDescription).toBe("Seed 2");
-      expect(m1.homeSourceDescription).toBe("Seed 3");
-      expect(m1.awaySourceDescription).toBe("Seed 4");
+      expect(m0.homeSourceDescription).toBe("Positie 1");
+      expect(m0.awaySourceDescription).toBe("Positie 2");
+      expect(m1.homeSourceDescription).toBe("Positie 3");
+      expect(m1.awaySourceDescription).toBe("Positie 4");
     });
 
     it("final references winners from semis", () => {
@@ -54,8 +54,8 @@ describe("generateKnockoutRounds", () => {
       const final = rounds[1].matches[0];
       const sf0Id = rounds[0].matches[0].id;
       const sf1Id = rounds[0].matches[1].id;
-      expect(final.homeSourceDescription).toBe(`Winner ${sf0Id}`);
-      expect(final.awaySourceDescription).toBe(`Winner ${sf1Id}`);
+      expect(final.homeSourceDescription).toBe(`Winnaar ${sf0Id}`);
+      expect(final.awaySourceDescription).toBe(`Winnaar ${sf1Id}`);
     });
   });
 
@@ -70,19 +70,19 @@ describe("generateKnockoutRounds", () => {
 
     it("names rounds Quarter-final, Semi-final, Final", () => {
       const rounds = generateKnockoutRounds(8);
-      expect(rounds[0].name).toBe("Quarter-final");
-      expect(rounds[1].name).toBe("Semi-final");
-      expect(rounds[2].name).toBe("Final");
+      expect(rounds[0].name).toBe("Kwartfinale");
+      expect(rounds[1].name).toBe("Halve finale");
+      expect(rounds[2].name).toBe("Finale");
     });
 
     it("first-round matches have seed descriptions 1-8", () => {
       const rounds = generateKnockoutRounds(8);
       for (let i = 0; i < 4; i++) {
         expect(rounds[0].matches[i].homeSourceDescription).toBe(
-          `Seed ${i * 2 + 1}`
+          `Positie ${i * 2 + 1}`
         );
         expect(rounds[0].matches[i].awaySourceDescription).toBe(
-          `Seed ${i * 2 + 2}`
+          `Positie ${i * 2 + 2}`
         );
       }
     });
@@ -92,16 +92,16 @@ describe("generateKnockoutRounds", () => {
       const sf0 = rounds[1].matches[0];
       const sf1 = rounds[1].matches[1];
       expect(sf0.homeSourceDescription).toBe(
-        `Winner ${rounds[0].matches[0].id}`
+        `Winnaar ${rounds[0].matches[0].id}`
       );
       expect(sf0.awaySourceDescription).toBe(
-        `Winner ${rounds[0].matches[1].id}`
+        `Winnaar ${rounds[0].matches[1].id}`
       );
       expect(sf1.homeSourceDescription).toBe(
-        `Winner ${rounds[0].matches[2].id}`
+        `Winnaar ${rounds[0].matches[2].id}`
       );
       expect(sf1.awaySourceDescription).toBe(
-        `Winner ${rounds[0].matches[3].id}`
+        `Winnaar ${rounds[0].matches[3].id}`
       );
     });
 
@@ -109,10 +109,10 @@ describe("generateKnockoutRounds", () => {
       const rounds = generateKnockoutRounds(8);
       const final = rounds[2].matches[0];
       expect(final.homeSourceDescription).toBe(
-        `Winner ${rounds[1].matches[0].id}`
+        `Winnaar ${rounds[1].matches[0].id}`
       );
       expect(final.awaySourceDescription).toBe(
-        `Winner ${rounds[1].matches[1].id}`
+        `Winnaar ${rounds[1].matches[1].id}`
       );
     });
   });
@@ -129,20 +129,20 @@ describe("generateKnockoutRounds", () => {
 
     it("names first round 'Round of 16'", () => {
       const rounds = generateKnockoutRounds(16);
-      expect(rounds[0].name).toBe("Round of 16");
-      expect(rounds[1].name).toBe("Quarter-final");
-      expect(rounds[2].name).toBe("Semi-final");
-      expect(rounds[3].name).toBe("Final");
+      expect(rounds[0].name).toBe("Achtste finales");
+      expect(rounds[1].name).toBe("Kwartfinale");
+      expect(rounds[2].name).toBe("Halve finale");
+      expect(rounds[3].name).toBe("Finale");
     });
 
     it("first-round matches have seed descriptions 1-16", () => {
       const rounds = generateKnockoutRounds(16);
       for (let i = 0; i < 8; i++) {
         expect(rounds[0].matches[i].homeSourceDescription).toBe(
-          `Seed ${i * 2 + 1}`
+          `Positie ${i * 2 + 1}`
         );
         expect(rounds[0].matches[i].awaySourceDescription).toBe(
-          `Seed ${i * 2 + 2}`
+          `Positie ${i * 2 + 2}`
         );
       }
     });
@@ -161,11 +161,11 @@ describe("generateKnockoutRounds", () => {
 
     it("names first round 'Round of 32'", () => {
       const rounds = generateKnockoutRounds(32);
-      expect(rounds[0].name).toBe("Round of 32");
-      expect(rounds[1].name).toBe("Round of 16");
-      expect(rounds[2].name).toBe("Quarter-final");
-      expect(rounds[3].name).toBe("Semi-final");
-      expect(rounds[4].name).toBe("Final");
+      expect(rounds[0].name).toBe("32ste finales");
+      expect(rounds[1].name).toBe("Achtste finales");
+      expect(rounds[2].name).toBe("Kwartfinale");
+      expect(rounds[3].name).toBe("Halve finale");
+      expect(rounds[4].name).toBe("Finale");
     });
   });
 
@@ -239,8 +239,8 @@ describe("generateKnockoutRounds", () => {
             rounds[r - 1].matches.map((m) => m.id)
           );
           for (const match of rounds[r].matches) {
-            const homeRef = match.homeSourceDescription.replace("Winner ", "");
-            const awayRef = match.awaySourceDescription.replace("Winner ", "");
+            const homeRef = match.homeSourceDescription.replace("Winnaar ", "");
+            const awayRef = match.awaySourceDescription.replace("Winnaar ", "");
             expect(prevMatchIds.has(homeRef)).toBe(true);
             expect(prevMatchIds.has(awayRef)).toBe(true);
           }
@@ -254,8 +254,8 @@ describe("generateKnockoutRounds", () => {
         for (let r = 1; r < rounds.length; r++) {
           const refs: string[] = [];
           for (const match of rounds[r].matches) {
-            refs.push(match.homeSourceDescription.replace("Winner ", ""));
-            refs.push(match.awaySourceDescription.replace("Winner ", ""));
+            refs.push(match.homeSourceDescription.replace("Winnaar ", ""));
+            refs.push(match.awaySourceDescription.replace("Winnaar ", ""));
           }
           const prevMatchIds = rounds[r - 1].matches.map((m) => m.id);
           expect(refs.sort()).toEqual(prevMatchIds.sort());
@@ -997,7 +997,7 @@ describe("additional edge cases", () => {
       for (const size of [2, 4, 8, 16, 32]) {
         const rounds = generateKnockoutRounds(size);
         const last = rounds[rounds.length - 1];
-        expect(last.name).toBe("Final");
+        expect(last.name).toBe("Finale");
         expect(last.matches).toHaveLength(1);
       }
     });
@@ -1025,10 +1025,10 @@ describe("additional edge cases", () => {
       const rounds = generateKnockoutRounds(16);
       for (let i = 0; i < rounds[0].matches.length; i++) {
         expect(rounds[0].matches[i].homeSourceDescription).toMatch(
-          /^Seed \d+$/
+          /^Positie \d+$/
         );
         expect(rounds[0].matches[i].awaySourceDescription).toMatch(
-          /^Seed \d+$/
+          /^Positie \d+$/
         );
       }
     });
@@ -1037,8 +1037,8 @@ describe("additional edge cases", () => {
       const rounds = generateKnockoutRounds(16);
       for (let r = 1; r < rounds.length; r++) {
         for (const match of rounds[r].matches) {
-          expect(match.homeSourceDescription).toMatch(/^Winner ko-\d+$/);
-          expect(match.awaySourceDescription).toMatch(/^Winner ko-\d+$/);
+          expect(match.homeSourceDescription).toMatch(/^Winnaar ko-\d+$/);
+          expect(match.awaySourceDescription).toMatch(/^Winnaar ko-\d+$/);
         }
       }
     });
@@ -1072,10 +1072,10 @@ describe("additional edge cases", () => {
         { teamId: "d", groupId: "B" },
       ];
       const seeded = seedBracket(rounds, teams);
-      expect(seeded[0].matches[0].homeSourceDescription).toBe("Seed 1");
-      expect(seeded[0].matches[0].awaySourceDescription).toBe("Seed 2");
+      expect(seeded[0].matches[0].homeSourceDescription).toBe("Positie 1");
+      expect(seeded[0].matches[0].awaySourceDescription).toBe("Positie 2");
       expect(seeded[1].matches[0].homeSourceDescription).toMatch(
-        /^Winner ko-\d+$/
+        /^Winnaar ko-\d+$/
       );
     });
 

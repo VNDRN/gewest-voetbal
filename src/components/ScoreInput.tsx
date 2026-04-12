@@ -36,7 +36,7 @@ export default function ScoreInput({
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-6 text-center text-lg font-semibold">Enter Score</h3>
+        <h3 className="mb-6 text-center text-lg font-semibold">Score invoeren</h3>
         <div className="flex items-center justify-center gap-6">
           <div className="flex flex-col items-center gap-2">
             <span className="text-sm font-medium text-gray-600">{homeTeam}</span>
@@ -66,13 +66,13 @@ export default function ScoreInput({
             onClick={onClose}
             className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            Annuleren
           </button>
           <button
             onClick={() => onSave({ home, away })}
             className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
-            Save
+            Opslaan
           </button>
         </div>
       </div>

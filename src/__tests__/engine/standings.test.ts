@@ -684,11 +684,12 @@ describe("rankBestNextPlaced", () => {
     teamId: string,
     points: number,
     gd: number,
-    gs: number
+    gs: number,
+    played = 3
   ): StandingRow {
     return {
       teamId,
-      played: 3,
+      played,
       won: 0,
       drawn: 0,
       lost: 0,
@@ -792,10 +793,84 @@ describe("rankBestNextPlaced", () => {
       );
       const ranked = rankBestNextPlaced(rows);
       expect(ranked).toHaveLength(20);
-      // Should be sorted by points descending (19, 18, ..., 0)
+      // Should be sorted by points per match descending
       for (let i = 0; i < ranked.length - 1; i++) {
-        expect(ranked[i].points).toBeGreaterThanOrEqual(ranked[i + 1].points);
+        const aPPM = ranked[i].points / (ranked[i].played || 1);
+        const bPPM = ranked[i + 1].points / (ranked[i + 1].played || 1);
+        expect(aPPM).toBeGreaterThanOrEqual(bPPM);
       }
+    });
+  });
+
+  describe("unequal group sizes (per-match comparison)", () => {
+    it("team from group of 3 (2 played) ranks above group of 4 (3 played) with same raw points but better PPM", () => {
+      // Team A: 6 pts in 3 matches → 2.0 PPM
+      // Team B: 6 pts in 2 matches → 3.0 PPM
+      const rows = [mkRow("A", 6, 2, 5, 3), mkRow("B", 6, 2, 4, 2)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("B");
+    });
+
+    it("team from group of 4 with more raw points can rank below team with better PPM", () => {
+      // Team A: 4 pts in 3 matches → 1.33 PPM
+      // Team B: 3 pts in 2 matches → 1.50 PPM
+      const rows = [mkRow("A", 4, 0, 3, 3), mkRow("B", 3, 0, 2, 2)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("B");
+    });
+
+    it("equal PPM falls through to GD per match", () => {
+      // Team A: 3 pts in 3 matches → 1.0 PPM, GD +3 → GDPM 1.0
+      // Team B: 2 pts in 2 matches → 1.0 PPM, GD +4 → GDPM 2.0
+      const rows = [mkRow("A", 3, 3, 5, 3), mkRow("B", 2, 4, 6, 2)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("B");
+    });
+
+    it("equal PPM and GDPM falls through to GF per match", () => {
+      // Team A: 3 pts in 3 matches → 1.0 PPM, GD +2/3 GDPM, GF 6 → GFPM 2.0
+      // Team B: 2 pts in 2 matches → 1.0 PPM, GD +2/2 → same GDPM as 2/3? No...
+      // Let me make them truly equal PPM and GDPM:
+      // Team A: 6 pts in 3 matches → 2.0 PPM, GD +3 → GDPM 1.0, GF 6 → GFPM 2.0
+      // Team B: 4 pts in 2 matches → 2.0 PPM, GD +2 → GDPM 1.0, GF 5 → GFPM 2.5
+      const rows = [mkRow("A", 6, 3, 6, 3), mkRow("B", 4, 2, 5, 2)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("B");
+    });
+
+    it("real scenario: 1x4 + 2x3, 3rd-placed teams compared fairly", () => {
+      // Group A (4 teams, 3 matches each): 3rd place has 3 pts, GD 0, GF 3
+      // Group B (3 teams, 2 matches each): 3rd place has 3 pts, GD +1, GF 3
+      // Group C (3 teams, 2 matches each): 3rd place has 1 pt, GD -2, GF 1
+      // PPM: A=1.0, B=1.5, C=0.5 → order B, A, C
+      const rows = [
+        mkRow("grpA-3rd", 3, 0, 3, 3),
+        mkRow("grpB-3rd", 3, 1, 3, 2),
+        mkRow("grpC-3rd", 1, -2, 1, 2),
+      ];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("grpB-3rd");
+      expect(ranked[1].teamId).toBe("grpA-3rd");
+      expect(ranked[2].teamId).toBe("grpC-3rd");
+    });
+
+    it("teams with 0 played are ranked last", () => {
+      const rows = [mkRow("A", 0, 0, 0, 0), mkRow("B", 3, 1, 2, 2)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked[0].teamId).toBe("B");
+    });
+
+    it("two teams with 0 played are tied", () => {
+      const rows = [mkRow("A", 0, 0, 0, 0), mkRow("B", 0, 0, 0, 0)];
+      const ranked = rankBestNextPlaced(rows);
+      expect(ranked).toHaveLength(2);
+    });
+
+    it("does not mutate input", () => {
+      const rows = [mkRow("A", 4, 1, 3, 3), mkRow("B", 3, 2, 4, 2)];
+      const original = rows.map((r) => ({ ...r }));
+      rankBestNextPlaced(rows);
+      expect(rows).toEqual(original);
     });
   });
 });

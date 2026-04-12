@@ -14,6 +14,7 @@ import type {
   Team,
   Group,
   KnockoutRound,
+  ScheduleBreak,
 } from "../types";
 import { loadState, saveState } from "../persistence/localStorage";
 
@@ -38,7 +39,7 @@ function createDefaultTournament(): Tournament {
     id: crypto.randomUUID(),
     name: "Toernooi",
     date: new Date().toISOString().slice(0, 10),
-    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00" },
+    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00", breaks: [] },
     competitions: [
       createEmptyCompetition("mens", "Heren"),
       createEmptyCompetition("womens", "Dames"),
@@ -83,6 +84,9 @@ export type TournamentAction =
       matchId: string;
       score: { home: number; away: number };
     }
+  | { type: "ADD_BREAK"; breakItem: ScheduleBreak }
+  | { type: "UPDATE_BREAK"; breakId: string; durationMinutes: number }
+  | { type: "REMOVE_BREAK"; breakId: string }
   | { type: "RESET" };
 
 function updateCompetition(
@@ -184,6 +188,37 @@ function tournamentReducer(
         ),
       }));
 
+    case "ADD_BREAK":
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          breaks: [...state.config.breaks, action.breakItem],
+        },
+      };
+
+    case "UPDATE_BREAK":
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          breaks: state.config.breaks.map((b) =>
+            b.id === action.breakId
+              ? { ...b, durationMinutes: action.durationMinutes }
+              : b
+          ),
+        },
+      };
+
+    case "REMOVE_BREAK":
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          breaks: state.config.breaks.filter((b) => b.id !== action.breakId),
+        },
+      };
+
     case "RESET":
       return createDefaultTournament();
   }
@@ -213,12 +248,14 @@ export function TournamentProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTournament(): Tournament {
   const ctx = useContext(TournamentContext);
   if (!ctx) throw new Error("useTournament must be used within TournamentProvider");
   return ctx;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTournamentDispatch(): Dispatch<TournamentAction> {
   const ctx = useContext(TournamentDispatchContext);
   if (!ctx)

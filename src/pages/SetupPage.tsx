@@ -13,6 +13,7 @@ import {
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
 import { generateKnockoutRounds } from "../engine/knockout";
+import { formatTime } from "../engine/time";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -40,6 +41,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   const bracketFill = useMemo(
     () =>
       calculateBracketFill(groupCount, competition.config.advancingPerGroup),
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     [groupCount, competition.config.advancingPerGroup]
   );
 
@@ -197,15 +199,6 @@ export default function SetupPage() {
   const dispatch = useTournamentDispatch();
   const navigate = useNavigate();
 
-  function formatTime(slot: number): string {
-    const { startTime, slotDurationMinutes } = tournament.config;
-    const [h, m] = startTime.split(":").map(Number);
-    const total = h * 60 + m + slot * slotDurationMinutes;
-    const hours = Math.floor(total / 60).toString().padStart(2, "0");
-    const mins = (total % 60).toString().padStart(2, "0");
-    return `${hours}:${mins}`;
-  }
-
   const estimatedSlots = useMemo(() => {
     let totalGroupMatches = 0;
     const knockoutMatchesByRound: number[] = [];
@@ -244,6 +237,7 @@ export default function SetupPage() {
   }, [tournament.competitions, tournament.config.fieldCount]);
 
   function handleGenerate() {
+    dispatch({ type: "UPDATE_CONFIG", config: { breaks: [] } });
     const allMatches: { match: Match; compId: string; groupId: string }[] = [];
     const groupsPerComp: Map<string, Group[]> = new Map();
 
@@ -331,6 +325,16 @@ export default function SetupPage() {
     }
 
     const maxGroupSlot = scheduled.reduce((max, m) => Math.max(max, m.timeSlot), -1);
+    if (maxGroupSlot >= 0) {
+      dispatch({
+        type: "ADD_BREAK",
+        breakItem: {
+          id: crypto.randomUUID(),
+          afterTimeSlot: maxGroupSlot,
+          durationMinutes: 10,
+        },
+      });
+    }
     let nextSlot = maxGroupSlot + 1;
     const maxRoundCount = Math.max(
       ...Array.from(knockoutRoundsPerComp.values()).map((r) => r.length),
@@ -468,8 +472,8 @@ export default function SetupPage() {
 
       {estimatedSlots > 0 && (
         <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-          Geschat: {estimatedSlots} tijdsloten ({formatTime(0)} -{" "}
-          {formatTime(estimatedSlots)})
+          Geschat: {estimatedSlots} tijdsloten ({formatTime(0, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)} -{" "}
+          {formatTime(estimatedSlots, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)})
         </div>
       )}
 

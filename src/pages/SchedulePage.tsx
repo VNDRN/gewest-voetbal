@@ -164,8 +164,25 @@ export default function SchedulePage() {
           fieldCount={tournament.config.fieldCount}
           startTime={tournament.config.startTime}
           slotDurationMinutes={tournament.config.slotDurationMinutes}
+          breaks={tournament.config.breaks}
           teamNames={teamNames}
           onMatchClick={setEditingMatch}
+          onAddBreak={(afterTimeSlot) =>
+            dispatch({
+              type: "ADD_BREAK",
+              breakItem: {
+                id: crypto.randomUUID(),
+                afterTimeSlot,
+                durationMinutes: 10,
+              },
+            })
+          }
+          onUpdateBreak={(breakId, durationMinutes) =>
+            dispatch({ type: "UPDATE_BREAK", breakId, durationMinutes })
+          }
+          onRemoveBreak={(breakId) =>
+            dispatch({ type: "REMOVE_BREAK", breakId })
+          }
         />
       </div>
 
@@ -189,8 +206,8 @@ export default function SchedulePage() {
 
       {editingMatch && (
         <ScoreInput
-          homeTeam={teamNames.get(editingMatch.homeTeamId) ?? "Thuis"}
-          awayTeam={teamNames.get(editingMatch.awayTeamId) ?? "Uit"}
+          homeTeam={teamNames.get(editingMatch.homeTeamId ?? "") ?? "Thuis"}
+          awayTeam={teamNames.get(editingMatch.awayTeamId ?? "") ?? "Uit"}
           initialScore={editingMatch.score}
           onClose={() => setEditingMatch(null)}
           onSave={(score) => {

@@ -1,5 +1,6 @@
 import type { Tournament } from "../types";
 import { calculateStandings } from "../engine/standings";
+import { formatTime } from "../engine/time";
 
 export function exportToJson(tournament: Tournament): string {
   return JSON.stringify(tournament, null, 2);
@@ -47,19 +48,6 @@ function escapeCsv(value: string): string {
   return value;
 }
 
-function formatTime(
-  timeSlot: number,
-  startTime: string,
-  slotDurationMinutes: number
-): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const totalMinutes = h * 60 + m + timeSlot * slotDurationMinutes;
-  const hours = Math.floor(totalMinutes / 60)
-    .toString()
-    .padStart(2, "0");
-  const minutes = (totalMinutes % 60).toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
 
 export function exportMatchesCsv(tournament: Tournament): string {
   const header =
@@ -85,7 +73,8 @@ export function exportMatchesCsv(tournament: Tournament): string {
               ? formatTime(
                   match.timeSlot,
                   tournament.config.startTime,
-                  tournament.config.slotDurationMinutes
+                  tournament.config.slotDurationMinutes,
+                  tournament.config.breaks ?? []
                 )
               : "",
           ].join(",")
@@ -113,7 +102,8 @@ export function exportMatchesCsv(tournament: Tournament): string {
               ? formatTime(
                   match.timeSlot,
                   tournament.config.startTime,
-                  tournament.config.slotDurationMinutes
+                  tournament.config.slotDurationMinutes,
+                  tournament.config.breaks ?? []
                 )
               : "",
           ].join(",")

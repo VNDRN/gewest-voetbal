@@ -58,18 +58,20 @@ describe("generateKnockoutRounds", () => {
     });
   });
 
-  describe("bracket size 4 (SF + Final)", () => {
-    it("produces 2 rounds with 2+1 matches", () => {
+  describe("bracket size 4 (SF + KF + Final)", () => {
+    it("produces 3 rounds with 2+1+1 matches", () => {
       const rounds = generateKnockoutRounds(4);
-      expect(rounds).toHaveLength(2);
+      expect(rounds).toHaveLength(3);
       expect(rounds[0].matches).toHaveLength(2);
       expect(rounds[1].matches).toHaveLength(1);
+      expect(rounds[2].matches).toHaveLength(1);
     });
 
-    it("names rounds Semi-final and Final", () => {
+    it("names rounds Semi-final, Kleine finale, and Final", () => {
       const rounds = generateKnockoutRounds(4);
       expect(rounds[0].name).toBe("Halve finale");
-      expect(rounds[1].name).toBe("Finale");
+      expect(rounds[1].name).toBe("Kleine finale");
+      expect(rounds[2].name).toBe("Finale");
     });
 
     it("first-round matches have bracket-folded seed descriptions", () => {
@@ -83,28 +85,40 @@ describe("generateKnockoutRounds", () => {
 
     it("final references winners from semis", () => {
       const rounds = generateKnockoutRounds(4);
-      const final = rounds[1].matches[0];
+      const final = rounds[2].matches[0];
       const sf0Id = rounds[0].matches[0].id;
       const sf1Id = rounds[0].matches[1].id;
       expect(final.homeSourceDescription).toBe(`Winnaar ${sf0Id}`);
       expect(final.awaySourceDescription).toBe(`Winnaar ${sf1Id}`);
     });
+
+    it("kleine finale references losers from semis", () => {
+      const rounds = generateKnockoutRounds(4);
+      const kf = rounds[1].matches[0];
+      const sf0Id = rounds[0].matches[0].id;
+      const sf1Id = rounds[0].matches[1].id;
+      expect(kf.homeSourceDescription).toBe(`Verliezer ${sf0Id}`);
+      expect(kf.awaySourceDescription).toBe(`Verliezer ${sf1Id}`);
+      expect(rounds[1].isThirdPlace).toBe(true);
+    });
   });
 
-  describe("bracket size 8 (QF + SF + Final)", () => {
-    it("produces 3 rounds with 4+2+1 matches", () => {
+  describe("bracket size 8 (QF + SF + KF + Final)", () => {
+    it("produces 4 rounds with 4+2+1+1 matches", () => {
       const rounds = generateKnockoutRounds(8);
-      expect(rounds).toHaveLength(3);
+      expect(rounds).toHaveLength(4);
       expect(rounds[0].matches).toHaveLength(4);
       expect(rounds[1].matches).toHaveLength(2);
       expect(rounds[2].matches).toHaveLength(1);
+      expect(rounds[3].matches).toHaveLength(1);
     });
 
-    it("names rounds Quarter-final, Semi-final, Final", () => {
+    it("names rounds Quarter-final, Semi-final, Kleine finale, Final", () => {
       const rounds = generateKnockoutRounds(8);
       expect(rounds[0].name).toBe("Kwartfinale");
       expect(rounds[1].name).toBe("Halve finale");
-      expect(rounds[2].name).toBe("Finale");
+      expect(rounds[2].name).toBe("Kleine finale");
+      expect(rounds[3].name).toBe("Finale");
     });
 
     it("first-round matches have bracket-folded seed descriptions", () => {
@@ -141,7 +155,7 @@ describe("generateKnockoutRounds", () => {
 
     it("final references SF match winners", () => {
       const rounds = generateKnockoutRounds(8);
-      const final = rounds[2].matches[0];
+      const final = rounds[3].matches[0];
       expect(final.homeSourceDescription).toBe(
         `Winnaar ${rounds[1].matches[0].id}`
       );
@@ -152,13 +166,14 @@ describe("generateKnockoutRounds", () => {
   });
 
   describe("bracket size 16", () => {
-    it("produces 4 rounds with 8+4+2+1 matches", () => {
+    it("produces 5 rounds with 8+4+2+1+1 matches", () => {
       const rounds = generateKnockoutRounds(16);
-      expect(rounds).toHaveLength(4);
+      expect(rounds).toHaveLength(5);
       expect(rounds[0].matches).toHaveLength(8);
       expect(rounds[1].matches).toHaveLength(4);
       expect(rounds[2].matches).toHaveLength(2);
       expect(rounds[3].matches).toHaveLength(1);
+      expect(rounds[4].matches).toHaveLength(1);
     });
 
     it("names first round 'Round of 16'", () => {
@@ -166,7 +181,8 @@ describe("generateKnockoutRounds", () => {
       expect(rounds[0].name).toBe("Achtste finales");
       expect(rounds[1].name).toBe("Kwartfinale");
       expect(rounds[2].name).toBe("Halve finale");
-      expect(rounds[3].name).toBe("Finale");
+      expect(rounds[3].name).toBe("Kleine finale");
+      expect(rounds[4].name).toBe("Finale");
     });
 
     it("first-round matches have bracket-folded seed descriptions", () => {
@@ -189,14 +205,15 @@ describe("generateKnockoutRounds", () => {
   });
 
   describe("bracket size 32", () => {
-    it("produces 5 rounds with 16+8+4+2+1 matches", () => {
+    it("produces 6 rounds with 16+8+4+2+1+1 matches", () => {
       const rounds = generateKnockoutRounds(32);
-      expect(rounds).toHaveLength(5);
+      expect(rounds).toHaveLength(6);
       expect(rounds[0].matches).toHaveLength(16);
       expect(rounds[1].matches).toHaveLength(8);
       expect(rounds[2].matches).toHaveLength(4);
       expect(rounds[3].matches).toHaveLength(2);
       expect(rounds[4].matches).toHaveLength(1);
+      expect(rounds[5].matches).toHaveLength(1);
     });
 
     it("names first round 'Round of 32'", () => {
@@ -205,7 +222,8 @@ describe("generateKnockoutRounds", () => {
       expect(rounds[1].name).toBe("Achtste finales");
       expect(rounds[2].name).toBe("Kwartfinale");
       expect(rounds[3].name).toBe("Halve finale");
-      expect(rounds[4].name).toBe("Finale");
+      expect(rounds[4].name).toBe("Kleine finale");
+      expect(rounds[5].name).toBe("Finale");
     });
   });
 
@@ -252,11 +270,11 @@ describe("generateKnockoutRounds", () => {
       }
     });
 
-    it("total match count equals bracketSize - 1", () => {
+    it("total match count equals bracketSize - 1 (+ 1 kleine finale for size >= 4)", () => {
       for (const size of [2, 4, 8, 16, 32]) {
         const rounds = generateKnockoutRounds(size);
         const total = rounds.reduce((sum, r) => sum + r.matches.length, 0);
-        expect(total).toBe(size - 1);
+        expect(total).toBe(size >= 4 ? size : size - 1);
       }
     });
 
@@ -271,13 +289,25 @@ describe("generateKnockoutRounds", () => {
   });
 
   describe("source description chain integrity", () => {
-    it("later round source descriptions reference actual match IDs from previous round", () => {
+    it("later round source descriptions reference actual match IDs from feeding round", () => {
       for (const size of [4, 8, 16, 32]) {
         const rounds = generateKnockoutRounds(size);
         for (let r = 1; r < rounds.length; r++) {
-          const prevMatchIds = new Set(
-            rounds[r - 1].matches.map((m) => m.id)
-          );
+          if (rounds[r].isThirdPlace) {
+            // KF references the SF round (same as previous round)
+            const sfIds = new Set(rounds[r - 1].matches.map((m) => m.id));
+            for (const match of rounds[r].matches) {
+              const homeRef = match.homeSourceDescription.replace("Verliezer ", "");
+              const awayRef = match.awaySourceDescription.replace("Verliezer ", "");
+              expect(sfIds.has(homeRef)).toBe(true);
+              expect(sfIds.has(awayRef)).toBe(true);
+            }
+            continue;
+          }
+          // Final after KF references the SF round (skip KF)
+          let prevR = r - 1;
+          if (rounds[prevR].isThirdPlace) prevR--;
+          const prevMatchIds = new Set(rounds[prevR].matches.map((m) => m.id));
           for (const match of rounds[r].matches) {
             const homeRef = match.homeSourceDescription.replace("Winnaar ", "");
             const awayRef = match.awaySourceDescription.replace("Winnaar ", "");
@@ -288,18 +318,25 @@ describe("generateKnockoutRounds", () => {
       }
     });
 
-    it("each previous round match is referenced exactly once in next round", () => {
+    it("SF matches are each referenced by both KF and Final (winner + loser)", () => {
       for (const size of [4, 8, 16, 32]) {
         const rounds = generateKnockoutRounds(size);
-        for (let r = 1; r < rounds.length; r++) {
-          const refs: string[] = [];
-          for (const match of rounds[r].matches) {
-            refs.push(match.homeSourceDescription.replace("Winnaar ", ""));
-            refs.push(match.awaySourceDescription.replace("Winnaar ", ""));
-          }
-          const prevMatchIds = rounds[r - 1].matches.map((m) => m.id);
-          expect(refs.sort()).toEqual(prevMatchIds.sort());
-        }
+        const kfRound = rounds.find((r) => r.isThirdPlace)!;
+        const finalRound = rounds[rounds.length - 1];
+        const sfRound = rounds[rounds.indexOf(kfRound) - 1];
+
+        const kfRefs = kfRound.matches.flatMap((m) => [
+          m.homeSourceDescription.replace("Verliezer ", ""),
+          m.awaySourceDescription.replace("Verliezer ", ""),
+        ]);
+        const finalRefs = finalRound.matches.flatMap((m) => [
+          m.homeSourceDescription.replace("Winnaar ", ""),
+          m.awaySourceDescription.replace("Winnaar ", ""),
+        ]);
+
+        const sfIds = sfRound.matches.map((m) => m.id);
+        expect(kfRefs.sort()).toEqual(sfIds.sort());
+        expect(finalRefs.sort()).toEqual(sfIds.sort());
       }
     });
   });
@@ -635,41 +672,51 @@ describe("advanceWinner", () => {
   }
 
   describe("basic advancement", () => {
-    it("home team wins and advances to correct slot", () => {
+    it("home team wins and advances to final", () => {
       let rounds = seedAndSetupBracket4();
       const m0Id = rounds[0].matches[0].id;
       rounds = setScore(rounds, m0Id, 3, 1);
       const advanced = advanceWinner(rounds, m0Id);
       const homeTeam = rounds[0].matches[0].homeTeamId;
-      expect(advanced[1].matches[0].homeTeamId).toBe(homeTeam);
+      const awayTeam = rounds[0].matches[0].awayTeamId;
+      expect(advanced[2].matches[0].homeTeamId).toBe(homeTeam);
+      expect(advanced[1].matches[0].homeTeamId).toBe(awayTeam);
     });
 
-    it("away team wins and advances to correct slot", () => {
+    it("away team wins and advances to final", () => {
       let rounds = seedAndSetupBracket4();
       const m0Id = rounds[0].matches[0].id;
       rounds = setScore(rounds, m0Id, 0, 2);
       const advanced = advanceWinner(rounds, m0Id);
+      const homeTeam = rounds[0].matches[0].homeTeamId;
       const awayTeam = rounds[0].matches[0].awayTeamId;
-      expect(advanced[1].matches[0].homeTeamId).toBe(awayTeam);
+      expect(advanced[2].matches[0].homeTeamId).toBe(awayTeam);
+      expect(advanced[1].matches[0].homeTeamId).toBe(homeTeam);
     });
 
-    it("match 0 winner → next round match 0 home", () => {
+    it("match 0 winner → final match 0 home, loser → KF match 0 home", () => {
       let rounds = seedAndSetupBracket4();
       const m0Id = rounds[0].matches[0].id;
       rounds = setScore(rounds, m0Id, 2, 0);
       const advanced = advanceWinner(rounds, m0Id);
-      expect(advanced[1].matches[0].homeTeamId).toBe(
+      expect(advanced[2].matches[0].homeTeamId).toBe(
         rounds[0].matches[0].homeTeamId
+      );
+      expect(advanced[1].matches[0].homeTeamId).toBe(
+        rounds[0].matches[0].awayTeamId
       );
     });
 
-    it("match 1 winner → next round match 0 away", () => {
+    it("match 1 winner → final match 0 away, loser → KF match 0 away", () => {
       let rounds = seedAndSetupBracket4();
       const m1Id = rounds[0].matches[1].id;
       rounds = setScore(rounds, m1Id, 2, 0);
       const advanced = advanceWinner(rounds, m1Id);
-      expect(advanced[1].matches[0].awayTeamId).toBe(
+      expect(advanced[2].matches[0].awayTeamId).toBe(
         rounds[0].matches[1].homeTeamId
+      );
+      expect(advanced[1].matches[0].awayTeamId).toBe(
+        rounds[0].matches[1].awayTeamId
       );
     });
   });
@@ -730,7 +777,7 @@ describe("advanceWinner", () => {
       );
     });
 
-    it("SF match winner advances to final", () => {
+    it("SF match winner advances to final, loser to kleine finale", () => {
       let rounds = seedAndSetupBracket8();
       // Play QF match 0
       const qf0Id = rounds[0].matches[0].id;
@@ -744,8 +791,11 @@ describe("advanceWinner", () => {
       const sf0Id = rounds[1].matches[0].id;
       rounds = setScore(rounds, sf0Id, 3, 0);
       const advanced = advanceWinner(rounds, sf0Id);
-      expect(advanced[2].matches[0].homeTeamId).toBe(
+      expect(advanced[3].matches[0].homeTeamId).toBe(
         rounds[1].matches[0].homeTeamId
+      );
+      expect(advanced[2].matches[0].homeTeamId).toBe(
+        rounds[1].matches[0].awayTeamId
       );
     });
   });
@@ -780,12 +830,11 @@ describe("advanceWinner", () => {
       rounds = setScore(rounds, sf1Id, 1, 0);
       rounds = advanceWinner(rounds, sf1Id);
       // Play final
-      const finalId = rounds[1].matches[0].id;
+      const finalId = rounds[2].matches[0].id;
       rounds = setScore(rounds, finalId, 3, 1);
       const result = advanceWinner(rounds, finalId);
-      // Should just return rounds without error — no more rounds to advance to
       expect(result).toBeDefined();
-      expect(result).toHaveLength(2);
+      expect(result).toHaveLength(3);
     });
   });
 
@@ -812,8 +861,7 @@ describe("advanceWinner", () => {
       const rounds = seedAndSetupBracket4();
       const m0Id = rounds[0].matches[0].id;
       const result = advanceWinner(rounds, m0Id);
-      // No score set, should not advance
-      const finalHome = result[1].matches[0].homeTeamId;
+      const finalHome = result[2].matches[0].homeTeamId;
       expect(finalHome).toBeNull();
     });
   });
@@ -821,11 +869,9 @@ describe("advanceWinner", () => {
 
 describe("integration scenarios", () => {
   it("full 4-team bracket: generate → seed → play → advance → champion", () => {
-    // Generate
     let rounds = generateKnockoutRounds(4);
-    expect(rounds).toHaveLength(2);
+    expect(rounds).toHaveLength(3);
 
-    // Seed
     rounds = seedBracket(rounds, [
       { teamId: "alpha", groupId: "X" },
       { teamId: "beta", groupId: "Y" },
@@ -833,7 +879,6 @@ describe("integration scenarios", () => {
       { teamId: "delta", groupId: "Y" },
     ]);
 
-    // Verify seeding
     const allSeeded = rounds[0].matches
       .flatMap((m) => [m.homeTeamId, m.awayTeamId])
       .filter(Boolean);
@@ -848,7 +893,8 @@ describe("integration scenarios", () => {
       ),
     }));
     rounds = advanceWinner(rounds, sf0Id);
-    const sf0Winner = rounds[0].matches[0].homeTeamId; // home won 2-1
+    const sf0Winner = rounds[0].matches[0].homeTeamId;
+    const sf0Loser = rounds[0].matches[0].awayTeamId;
 
     // Play SF 2
     const sf1Id = rounds[0].matches[1].id;
@@ -859,14 +905,19 @@ describe("integration scenarios", () => {
       ),
     }));
     rounds = advanceWinner(rounds, sf1Id);
-    const sf1Winner = rounds[0].matches[1].awayTeamId; // away won 0-3
+    const sf1Winner = rounds[0].matches[1].awayTeamId;
+    const sf1Loser = rounds[0].matches[1].homeTeamId;
 
     // Verify final has both winners
-    expect(rounds[1].matches[0].homeTeamId).toBe(sf0Winner);
-    expect(rounds[1].matches[0].awayTeamId).toBe(sf1Winner);
+    expect(rounds[2].matches[0].homeTeamId).toBe(sf0Winner);
+    expect(rounds[2].matches[0].awayTeamId).toBe(sf1Winner);
+
+    // Verify kleine finale has both losers
+    expect(rounds[1].matches[0].homeTeamId).toBe(sf0Loser);
+    expect(rounds[1].matches[0].awayTeamId).toBe(sf1Loser);
 
     // Play Final
-    const finalId = rounds[1].matches[0].id;
+    const finalId = rounds[2].matches[0].id;
     rounds = rounds.map((r) => ({
       ...r,
       matches: r.matches.map((m) =>
@@ -874,17 +925,14 @@ describe("integration scenarios", () => {
       ),
     }));
 
-    // Champion is home team of final
-    expect(rounds[1].matches[0].score).toEqual({ home: 1, away: 0 });
-    expect(rounds[1].matches[0].homeTeamId).toBe(sf0Winner);
+    expect(rounds[2].matches[0].score).toEqual({ home: 1, away: 0 });
+    expect(rounds[2].matches[0].homeTeamId).toBe(sf0Winner);
   });
 
   it("full 8-team bracket flow from start to champion", () => {
-    // Generate
     let rounds = generateKnockoutRounds(8);
-    expect(rounds).toHaveLength(3);
+    expect(rounds).toHaveLength(4);
 
-    // Seed 8 teams from 4 groups
     const teams = [
       { teamId: "A1", groupId: "A" },
       { teamId: "A2", groupId: "A" },
@@ -897,13 +945,12 @@ describe("integration scenarios", () => {
     ];
     rounds = seedBracket(rounds, teams);
 
-    // Verify all 8 teams seeded
     const seeded = rounds[0].matches
       .flatMap((m) => [m.homeTeamId, m.awayTeamId])
       .filter(Boolean);
     expect(seeded).toHaveLength(8);
 
-    // Play all QF matches (home always wins for simplicity)
+    // Play all QF matches (home always wins)
     for (let i = 0; i < 4; i++) {
       const mId = rounds[0].matches[i].id;
       rounds = rounds.map((r) => ({
@@ -915,7 +962,6 @@ describe("integration scenarios", () => {
       rounds = advanceWinner(rounds, mId);
     }
 
-    // Verify SF has 4 teams
     const sfTeams = rounds[1].matches
       .flatMap((m) => [m.homeTeamId, m.awayTeamId])
       .filter(Boolean);
@@ -933,12 +979,14 @@ describe("integration scenarios", () => {
       rounds = advanceWinner(rounds, mId);
     }
 
-    // Verify Final has 2 teams
+    // Verify Final and Kleine finale have teams
+    expect(rounds[3].matches[0].homeTeamId).not.toBeNull();
+    expect(rounds[3].matches[0].awayTeamId).not.toBeNull();
     expect(rounds[2].matches[0].homeTeamId).not.toBeNull();
     expect(rounds[2].matches[0].awayTeamId).not.toBeNull();
 
     // Play Final
-    const finalId = rounds[2].matches[0].id;
+    const finalId = rounds[3].matches[0].id;
     rounds = rounds.map((r) => ({
       ...r,
       matches: r.matches.map((m) =>
@@ -946,8 +994,7 @@ describe("integration scenarios", () => {
       ),
     }));
 
-    // Champion determined
-    expect(rounds[2].matches[0].score).toEqual({ home: 3, away: 2 });
+    expect(rounds[3].matches[0].score).toEqual({ home: 3, away: 2 });
   });
 
   it("16-team bracket: all rounds advance correctly", () => {
@@ -958,9 +1005,11 @@ describe("integration scenarios", () => {
     }));
     rounds = seedBracket(rounds, teams);
 
-    // Play through all rounds
-    for (let r = 0; r < rounds.length - 1; r++) {
+    // Play through bracket rounds (skip KF — it's filled by loser advancement)
+    for (let r = 0; r < rounds.length; r++) {
+      if (rounds[r].isThirdPlace) continue;
       for (let i = 0; i < rounds[r].matches.length; i++) {
+        if (!rounds[r].matches[i].homeTeamId || !rounds[r].matches[i].awayTeamId) continue;
         const mId = rounds[r].matches[i].id;
         rounds = rounds.map((rd) => ({
           ...rd,
@@ -973,8 +1022,9 @@ describe("integration scenarios", () => {
     }
 
     // Final should have two teams
-    expect(rounds[3].matches[0].homeTeamId).not.toBeNull();
-    expect(rounds[3].matches[0].awayTeamId).not.toBeNull();
+    const finalRound = rounds[rounds.length - 1];
+    expect(finalRound.matches[0].homeTeamId).not.toBeNull();
+    expect(finalRound.matches[0].awayTeamId).not.toBeNull();
   });
 
   it("away team wins multiple rounds in sequence", () => {
@@ -986,7 +1036,6 @@ describe("integration scenarios", () => {
       { teamId: "cinderella", groupId: "Z" },
     ]);
 
-    // Both away teams win their semis
     const sf0Id = rounds[0].matches[0].id;
     const sf1Id = rounds[0].matches[1].id;
 
@@ -1007,11 +1056,18 @@ describe("integration scenarios", () => {
     rounds = advanceWinner(rounds, sf1Id);
 
     // Both away teams should be in final
-    expect(rounds[1].matches[0].homeTeamId).toBe(
+    expect(rounds[2].matches[0].homeTeamId).toBe(
       rounds[0].matches[0].awayTeamId
     );
-    expect(rounds[1].matches[0].awayTeamId).toBe(
+    expect(rounds[2].matches[0].awayTeamId).toBe(
       rounds[0].matches[1].awayTeamId
+    );
+    // Both home teams (losers) should be in kleine finale
+    expect(rounds[1].matches[0].homeTeamId).toBe(
+      rounds[0].matches[0].homeTeamId
+    );
+    expect(rounds[1].matches[0].awayTeamId).toBe(
+      rounds[0].matches[1].homeTeamId
     );
   });
 
@@ -1023,8 +1079,10 @@ describe("integration scenarios", () => {
     }));
     rounds = seedBracket(rounds, teams);
 
-    for (let r = 0; r < rounds.length - 1; r++) {
+    for (let r = 0; r < rounds.length; r++) {
+      if (rounds[r].isThirdPlace) continue;
       for (let i = 0; i < rounds[r].matches.length; i++) {
+        if (!rounds[r].matches[i].homeTeamId || !rounds[r].matches[i].awayTeamId) continue;
         const mId = rounds[r].matches[i].id;
         rounds = rounds.map((rd) => ({
           ...rd,
@@ -1036,16 +1094,17 @@ describe("integration scenarios", () => {
       }
     }
 
-    expect(rounds[4].matches[0].homeTeamId).not.toBeNull();
-    expect(rounds[4].matches[0].awayTeamId).not.toBeNull();
+    const finalRound = rounds[rounds.length - 1];
+    expect(finalRound.matches[0].homeTeamId).not.toBeNull();
+    expect(finalRound.matches[0].awayTeamId).not.toBeNull();
   });
 });
 
 describe("additional edge cases", () => {
   describe("generateKnockoutRounds edge cases", () => {
-    it("each round has exactly half the matches of the previous", () => {
+    it("bracket rounds (excl. KF) each have half the matches of the previous", () => {
       for (const size of [4, 8, 16, 32]) {
-        const rounds = generateKnockoutRounds(size);
+        const rounds = generateKnockoutRounds(size).filter((r) => !r.isThirdPlace);
         for (let i = 1; i < rounds.length; i++) {
           expect(rounds[i].matches.length).toBe(
             rounds[i - 1].matches.length / 2
@@ -1063,10 +1122,11 @@ describe("additional edge cases", () => {
       }
     });
 
-    it("number of rounds equals log2(bracketSize)", () => {
+    it("number of rounds equals log2(bracketSize) + 1 for size >= 4 (kleine finale)", () => {
       for (const size of [2, 4, 8, 16, 32]) {
         const rounds = generateKnockoutRounds(size);
-        expect(rounds).toHaveLength(Math.log2(size));
+        const expected = size >= 4 ? Math.log2(size) + 1 : Math.log2(size);
+        expect(rounds).toHaveLength(expected);
       }
     });
 
@@ -1094,12 +1154,13 @@ describe("additional edge cases", () => {
       }
     });
 
-    it("later round source descriptions follow Winner ko-N pattern", () => {
+    it("later round source descriptions follow Winner/Verliezer ko-N pattern", () => {
       const rounds = generateKnockoutRounds(16);
       for (let r = 1; r < rounds.length; r++) {
+        const prefix = rounds[r].isThirdPlace ? "Verliezer" : "Winnaar";
         for (const match of rounds[r].matches) {
-          expect(match.homeSourceDescription).toMatch(/^Winnaar ko-\d+$/);
-          expect(match.awaySourceDescription).toMatch(/^Winnaar ko-\d+$/);
+          expect(match.homeSourceDescription).toMatch(new RegExp(`^${prefix} ko-\\d+$`));
+          expect(match.awaySourceDescription).toMatch(new RegExp(`^${prefix} ko-\\d+$`));
         }
       }
     });
@@ -1136,6 +1197,9 @@ describe("additional edge cases", () => {
       expect(seeded[0].matches[0].homeSourceDescription).toBe("Positie 1");
       expect(seeded[0].matches[0].awaySourceDescription).toBe("Positie 4");
       expect(seeded[1].matches[0].homeSourceDescription).toMatch(
+        /^Verliezer ko-\d+$/
+      );
+      expect(seeded[2].matches[0].homeSourceDescription).toMatch(
         /^Winnaar ko-\d+$/
       );
     });
@@ -1253,7 +1317,7 @@ describe("additional edge cases", () => {
         ),
       }));
       rounds = advanceWinner(rounds, m0Id);
-      const firstWinner = rounds[1].matches[0].homeTeamId;
+      const firstWinner = rounds[2].matches[0].homeTeamId;
 
       // Change score: away wins
       rounds = rounds.map((r) => ({
@@ -1263,7 +1327,7 @@ describe("additional edge cases", () => {
         ),
       }));
       rounds = advanceWinner(rounds, m0Id);
-      const secondWinner = rounds[1].matches[0].homeTeamId;
+      const secondWinner = rounds[2].matches[0].homeTeamId;
 
       expect(firstWinner).not.toBe(secondWinner);
     });
@@ -1284,7 +1348,7 @@ describe("additional edge cases", () => {
         ),
       }));
       const advanced = advanceWinner(rounds, m0Id);
-      expect(advanced[1].matches[0].homeTeamId).toBe(
+      expect(advanced[2].matches[0].homeTeamId).toBe(
         rounds[0].matches[0].homeTeamId
       );
     });
@@ -1305,7 +1369,7 @@ describe("additional edge cases", () => {
         ),
       }));
       const advanced = advanceWinner(rounds, m0Id);
-      expect(advanced[1].matches[0].homeTeamId).toBe(
+      expect(advanced[2].matches[0].homeTeamId).toBe(
         rounds[0].matches[0].homeTeamId
       );
     });

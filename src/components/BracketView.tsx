@@ -113,20 +113,25 @@ export default function BracketView({ rounds, teamNames, onMatchClick }: Props) 
     );
   }
 
-  const finalRound = rounds[rounds.length - 1];
-  const preRounds = rounds.slice(0, -1);
+  const thirdPlaceIdx = rounds.findIndex((r) => r.isThirdPlace);
+  const thirdPlaceRound = thirdPlaceIdx !== -1 ? rounds[thirdPlaceIdx] : null;
 
-  const leftColumns = preRounds.map((round, ri) => ({
+  const mainRounds = rounds.filter((r) => !r.isThirdPlace);
+  const finalRound = mainRounds[mainRounds.length - 1];
+  const finalRoundIdx = rounds.indexOf(finalRound);
+  const bracketRounds = mainRounds.slice(0, -1);
+
+  const leftColumns = bracketRounds.map((round) => ({
     name: round.name,
     matches: round.matches.slice(0, round.matches.length / 2),
-    roundIndex: ri,
+    roundIndex: rounds.indexOf(round),
   }));
 
-  const rightColumns = [...preRounds]
-    .map((round, ri) => ({
+  const rightColumns = [...bracketRounds]
+    .map((round) => ({
       name: round.name,
       matches: round.matches.slice(round.matches.length / 2),
-      roundIndex: ri,
+      roundIndex: rounds.indexOf(round),
     }))
     .reverse();
 
@@ -143,13 +148,24 @@ export default function BracketView({ rounds, teamNames, onMatchClick }: Props) 
         />
       ))}
 
-      <RoundColumn
-        name={finalRound.name}
-        matches={finalRound.matches}
-        roundIndex={rounds.length - 1}
-        teamNames={teamNames}
-        onMatchClick={onMatchClick}
-      />
+      <div className="flex flex-col items-center gap-6">
+        <RoundColumn
+          name={finalRound.name}
+          matches={finalRound.matches}
+          roundIndex={finalRoundIdx}
+          teamNames={teamNames}
+          onMatchClick={onMatchClick}
+        />
+        {thirdPlaceRound && (
+          <RoundColumn
+            name={thirdPlaceRound.name}
+            matches={thirdPlaceRound.matches}
+            roundIndex={thirdPlaceIdx}
+            teamNames={teamNames}
+            onMatchClick={onMatchClick}
+          />
+        )}
+      </div>
 
       {rightColumns.map((col) => (
         <RoundColumn

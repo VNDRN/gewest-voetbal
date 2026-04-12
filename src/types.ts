@@ -54,6 +54,7 @@ export type Match = {
 export type KnockoutRound = {
   name: string;
   matches: KnockoutMatch[];
+  isThirdPlace?: boolean;
 };
 
 export type KnockoutMatch = Omit<Match, "homeTeamId" | "awayTeamId"> & {

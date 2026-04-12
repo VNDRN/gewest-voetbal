@@ -224,6 +224,12 @@ export default function SetupPage() {
       while (bracketSize >= 2) {
         knockoutMatchesByRound[roundIdx] =
           (knockoutMatchesByRound[roundIdx] ?? 0) + bracketSize / 2;
+        // Add kleine finale slot before the final
+        if (bracketSize === 2 && bf.knockoutSize >= 4) {
+          knockoutMatchesByRound[roundIdx + 1] =
+            (knockoutMatchesByRound[roundIdx + 1] ?? 0) + 1;
+          roundIdx++;
+        }
         bracketSize /= 2;
         roundIdx++;
       }
@@ -331,10 +337,13 @@ export default function SetupPage() {
       0
     );
 
-    for (let roundIdx = 0; roundIdx < maxRoundCount; roundIdx++) {
+    // Right-align rounds so finals/kleine finales from different bracket sizes
+    // land in the same time slots instead of overlapping with earlier rounds
+    for (let offset = maxRoundCount - 1; offset >= 0; offset--) {
       let fieldIdx = 0;
       for (const [, rounds] of knockoutRoundsPerComp) {
-        if (roundIdx >= rounds.length) continue;
+        const roundIdx = rounds.length - 1 - offset;
+        if (roundIdx < 0) continue;
         for (const match of rounds[roundIdx].matches) {
           match.fieldIndex = fieldIdx;
           match.timeSlot = nextSlot;

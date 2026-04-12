@@ -32,6 +32,26 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
   const seeds = bracketSeeds(bracketSize);
 
   while (currentSize >= 2) {
+    // Insert kleine finale before the final so IDs stay sequential
+    if (currentSize === 2 && bracketSize >= 4) {
+      const semiRound = rounds[rounds.length - 1];
+      rounds.push({
+        name: "Kleine finale",
+        matches: [{
+          id: `ko-${matchCounter++}`,
+          homeTeamId: null,
+          awayTeamId: null,
+          fieldIndex: -1,
+          timeSlot: -1,
+          score: null,
+          phase: "knockout",
+          homeSourceDescription: `Verliezer ${semiRound.matches[0].id}`,
+          awaySourceDescription: `Verliezer ${semiRound.matches[1].id}`,
+        }],
+        isThirdPlace: true,
+      });
+    }
+
     const matchCount = currentSize / 2;
     const roundName = ROUND_NAMES[currentSize] ?? `Ronde van ${currentSize}`;
     const matches: KnockoutMatch[] = [];
@@ -59,7 +79,13 @@ export function generateKnockoutRounds(bracketSize: number): KnockoutRound[] {
 
   // Wire up source descriptions for rounds after the first
   for (let r = 1; r < rounds.length; r++) {
-    const prevMatches = rounds[r - 1].matches;
+    if (rounds[r].isThirdPlace) continue;
+
+    // Skip over the kleine finale to find the feeding round
+    let prevR = r - 1;
+    if (rounds[prevR].isThirdPlace) prevR--;
+
+    const prevMatches = rounds[prevR].matches;
     for (let i = 0; i < rounds[r].matches.length; i++) {
       rounds[r].matches[i].homeSourceDescription =
         `Winnaar ${prevMatches[i * 2].id}`;
@@ -164,23 +190,47 @@ export function advanceWinner(
   const match = result[roundIdx].matches[matchIdx];
   if (!match.score) return result;
 
-  // No next round to advance to
+  // No advancement from final or third-place match
   if (roundIdx >= result.length - 1) return result;
+  if (result[roundIdx].isThirdPlace) return result;
 
-  // Determine winner
+  // Determine winner & loser
   let winnerId: string | null;
+  let loserId: string | null;
   if (match.score.home > match.score.away) {
     winnerId = match.homeTeamId;
+    loserId = match.awayTeamId;
   } else if (match.score.away > match.score.home) {
     winnerId = match.awayTeamId;
+    loserId = match.homeTeamId;
   } else {
     // Draw — home team advances as tiebreak
     winnerId = match.homeTeamId;
+    loserId = match.awayTeamId;
   }
 
-  // Place winner: even index → home slot, odd index → away slot
   const nextMatchIdx = Math.floor(matchIdx / 2);
-  if (matchIdx % 2 === 0) {
+  const isHome = matchIdx % 2 === 0;
+
+  // Semi-final: loser → kleine finale, winner → final (skip KF round)
+  if (result[roundIdx + 1]?.isThirdPlace) {
+    if (isHome) {
+      result[roundIdx + 1].matches[nextMatchIdx].homeTeamId = loserId;
+    } else {
+      result[roundIdx + 1].matches[nextMatchIdx].awayTeamId = loserId;
+    }
+    if (roundIdx + 2 < result.length) {
+      if (isHome) {
+        result[roundIdx + 2].matches[nextMatchIdx].homeTeamId = winnerId;
+      } else {
+        result[roundIdx + 2].matches[nextMatchIdx].awayTeamId = winnerId;
+      }
+    }
+    return result;
+  }
+
+  // Normal advancement: winner → next round
+  if (isHome) {
     result[roundIdx + 1].matches[nextMatchIdx].homeTeamId = winnerId;
   } else {
     result[roundIdx + 1].matches[nextMatchIdx].awayTeamId = winnerId;

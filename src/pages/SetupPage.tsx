@@ -236,6 +236,7 @@ export default function SetupPage() {
   }, [tournament.competitions, tournament.config.fieldCount]);
 
   function handleGenerate() {
+    dispatch({ type: "UPDATE_CONFIG", config: { breaks: [] } });
     const allMatches: { match: Match; compId: string; groupId: string }[] = [];
     const groupsPerComp: Map<string, Group[]> = new Map();
 
@@ -323,6 +324,16 @@ export default function SetupPage() {
     }
 
     const maxGroupSlot = scheduled.reduce((max, m) => Math.max(max, m.timeSlot), -1);
+    if (maxGroupSlot >= 0) {
+      dispatch({
+        type: "ADD_BREAK",
+        breakItem: {
+          id: crypto.randomUUID(),
+          afterTimeSlot: maxGroupSlot,
+          durationMinutes: 10,
+        },
+      });
+    }
     let nextSlot = maxGroupSlot + 1;
     const maxRoundCount = Math.max(
       ...Array.from(knockoutRoundsPerComp.values()).map((r) => r.length),

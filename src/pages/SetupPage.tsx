@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useTournament,
   useTournamentDispatch,
@@ -8,6 +8,7 @@ import {
   getGroupOptions,
   generateRoundRobinMatches,
   calculateBracketFill,
+  maxAdvancingPerGroup,
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
 
@@ -56,7 +57,19 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
     dispatch({ type: "REMOVE_TEAM", competitionId: competition.id, teamId });
   }
 
-  const maxAdvancing = Math.max(1, (selectedOption?.sizes[0] ?? 4) - 1);
+  const maxAdvancing = selectedOption
+    ? maxAdvancingPerGroup(selectedOption.sizes)
+    : 1;
+
+  useEffect(() => {
+    if (competition.config.advancingPerGroup > maxAdvancing) {
+      dispatch({
+        type: "UPDATE_COMPETITION_CONFIG",
+        competitionId: competition.id,
+        config: { advancingPerGroup: maxAdvancing },
+      });
+    }
+  }, [maxAdvancing, competition.config.advancingPerGroup, competition.id, dispatch]);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">

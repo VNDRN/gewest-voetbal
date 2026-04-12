@@ -63,13 +63,13 @@ export default function Layout() {
               onClick={handleExportJson}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
             >
-              Export JSON
+              Exporteer JSON
             </button>
             <button
               onClick={handleExportCsv}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
             >
-              Export CSV
+              Exporteer CSV
             </button>
             <button
               onClick={handleImport}

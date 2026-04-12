@@ -17,7 +17,11 @@ export default function MatchCard({ match, teamNames, onClick }: Props) {
     >
       <span className="font-medium">{home}</span>
       <span className="mx-2 rounded bg-gray-100 px-2 py-0.5 font-mono text-xs">
-        {match.score ? `${match.score.home} - ${match.score.away}` : "vs"}
+        {match.score
+          ? match.score.home === match.score.away && match.score.penHome != null
+            ? `${match.score.home}-${match.score.away} (${match.score.penHome}-${match.score.penAway} pen)`
+            : `${match.score.home} - ${match.score.away}`
+          : "vs"}
       </span>
       <span className="font-medium">{away}</span>
     </button>

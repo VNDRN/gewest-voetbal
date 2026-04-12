@@ -60,6 +60,10 @@ export default function GroupDraftEditor({
     setActiveTeam({ id, name: allTeamNames.get(id) ?? id });
   }
 
+  function handleDragCancel() {
+    setActiveTeam(null);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     setActiveTeam(null);
     const { active, over } = event;
@@ -93,6 +97,7 @@ export default function GroupDraftEditor({
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         {competitions.map((comp) => {
           const groups = draftGroups.get(comp.id) ?? [];

@@ -4,8 +4,7 @@ import {
   useTournament,
   useTournamentDispatch,
 } from "../context/TournamentContext";
-import type { Competition, Group, KnockoutRound, Match, Team } from "../types";
-import type { DraftGroup } from "../types";
+import type { Competition, DraftGroup, Group, KnockoutRound, Match, Team } from "../types";
 import { createDraft } from "../engine/draft";
 import GroupDraftEditor from "../components/GroupDraftEditor";
 import {
@@ -195,6 +194,11 @@ export default function SetupPage() {
 
   const [draftGroups, setDraftGroups] = useState<Map<string, DraftGroup[]> | null>(null);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraftGroups(null);
+  }, [tournament.competitions]);
+
   const estimatedSlots = useMemo(() => {
     let totalGroupMatches = 0;
     const knockoutMatchesByRound: number[] = [];
@@ -241,6 +245,14 @@ export default function SetupPage() {
       }
     }
     if (draft.size > 0) setDraftGroups(draft);
+  }
+
+  function handleDraftChange(compId: string, groups: DraftGroup[]) {
+    setDraftGroups((prev) => {
+      const next = new Map(prev);
+      next.set(compId, groups);
+      return next;
+    });
   }
 
   function handleConfirm() {
@@ -467,13 +479,7 @@ export default function SetupPage() {
             draftGroups.has(c.id)
           )}
           draftGroups={draftGroups}
-          onDraftChange={(compId, groups) => {
-            setDraftGroups((prev) => {
-              const next = new Map(prev);
-              next.set(compId, groups);
-              return next;
-            });
-          }}
+          onDraftChange={handleDraftChange}
           onConfirm={handleConfirm}
           onRedraw={handleDraw}
         />

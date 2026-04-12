@@ -15,6 +15,7 @@ import type {
   Group,
   KnockoutRound,
   ScheduleBreak,
+  Score,
 } from "../types";
 import { loadState, saveState } from "../persistence/localStorage";
 
@@ -70,7 +71,7 @@ export type TournamentAction =
       competitionId: string;
       groupId: string;
       matchId: string;
-      score: { home: number; away: number };
+      score: Score;
     }
   | {
       type: "SET_KNOCKOUT_ROUNDS";
@@ -82,7 +83,7 @@ export type TournamentAction =
       competitionId: string;
       roundIndex: number;
       matchId: string;
-      score: { home: number; away: number };
+      score: Score;
     }
   | { type: "ADD_BREAK"; breakItem: ScheduleBreak }
   | { type: "UPDATE_BREAK"; breakId: string; durationMinutes: number }

@@ -4,7 +4,9 @@ import {
   useTournament,
   useTournamentDispatch,
 } from "../context/TournamentContext";
-import type { Competition, Group, KnockoutRound, Match, Team } from "../types";
+import type { Competition, DraftGroup, Group, KnockoutRound, Match, Team } from "../types";
+import { createDraft } from "../engine/draft";
+import GroupDraftEditor from "../components/GroupDraftEditor";
 import {
   getGroupOptions,
   generateRoundRobinMatches,
@@ -14,15 +16,6 @@ import {
 import { scheduleMatches } from "../engine/scheduler";
 import { generateKnockoutRounds } from "../engine/knockout";
 import { formatTime } from "../engine/time";
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function CompetitionSetup({ competition }: { competition: Competition }) {
   const dispatch = useTournamentDispatch();
@@ -64,6 +57,16 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   const maxAdvancing = selectedOption
     ? maxAdvancingPerGroup(selectedOption.sizes)
     : 1;
+
+  useEffect(() => {
+    if (groupOptions.length > 0 && !selectedOption) {
+      dispatch({
+        type: "UPDATE_COMPETITION_CONFIG",
+        competitionId: competition.id,
+        config: { groupSize: groupOptions[0].sizes[0] },
+      });
+    }
+  }, [groupOptions, selectedOption, competition.id, dispatch]);
 
   useEffect(() => {
     if (competition.config.advancingPerGroup > maxAdvancing) {
@@ -199,6 +202,13 @@ export default function SetupPage() {
   const dispatch = useTournamentDispatch();
   const navigate = useNavigate();
 
+  const [draftGroups, setDraftGroups] = useState<Map<string, DraftGroup[]> | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraftGroups(null);
+  }, [tournament.competitions]);
+
   const estimatedSlots = useMemo(() => {
     let totalGroupMatches = 0;
     const knockoutMatchesByRound: number[] = [];
@@ -236,53 +246,51 @@ export default function SetupPage() {
     return groupSlots + knockoutSlots;
   }, [tournament.competitions, tournament.config.fieldCount]);
 
-  function handleGenerate() {
+  function handleDraw() {
+    const draft = new Map<string, DraftGroup[]>();
+    for (const comp of tournament.competitions) {
+      const groups = createDraft(comp);
+      if (groups.length > 0) {
+        draft.set(comp.id, groups);
+      }
+    }
+    if (draft.size > 0) setDraftGroups(draft);
+  }
+
+  function handleDraftChange(compId: string, groups: DraftGroup[]) {
+    setDraftGroups((prev) => {
+      const next = new Map(prev);
+      next.set(compId, groups);
+      return next;
+    });
+  }
+
+  function handleConfirm() {
+    if (!draftGroups) return;
+
     dispatch({ type: "UPDATE_CONFIG", config: { breaks: [] } });
     const allMatches: { match: Match; compId: string; groupId: string }[] = [];
     const groupsPerComp: Map<string, Group[]> = new Map();
 
-    for (const comp of tournament.competitions) {
-      const opts = getGroupOptions(comp.teams.length);
-      if (opts.length === 0) continue;
-
-      const opt =
-        opts.find((o) => o.sizes[0] === comp.config.groupSize) ?? opts[0];
-      const shuffled = shuffle(comp.teams);
-      const groups: Group[] = [];
+    for (const [compId, draft] of draftGroups) {
       const teamGroups: Record<string, string> = {};
-      let teamIdx = 0;
-
-      for (let g = 0; g < opt.groupCount; g++) {
-        const groupSize = opt.sizes[g];
-        const groupId = `${comp.id}-group-${String.fromCharCode(65 + g)}`;
-        const groupTeams = shuffled.slice(teamIdx, teamIdx + groupSize);
-        teamIdx += groupSize;
-
-        for (const t of groupTeams) {
-          teamGroups[t.id] = groupId;
+      for (const g of draft) {
+        for (const teamId of g.teamIds) {
+          teamGroups[teamId] = g.id;
         }
-
-        const teamIds = groupTeams.map((t) => t.id);
-        const matches = generateRoundRobinMatches(teamIds, groupId);
-
-        for (const m of matches) {
-          allMatches.push({ match: m, compId: comp.id, groupId });
-        }
-
-        groups.push({
-          id: groupId,
-          name: `Groep ${String.fromCharCode(65 + g)}`,
-          teamIds,
-          matches: [],
-        });
       }
 
-      dispatch({
-        type: "SET_TEAM_GROUPS",
-        competitionId: comp.id,
-        teamGroups,
+      dispatch({ type: "SET_TEAM_GROUPS", competitionId: compId, teamGroups });
+
+      const groups: Group[] = draft.map((g) => {
+        const matches = generateRoundRobinMatches(g.teamIds, g.id);
+        for (const m of matches) {
+          allMatches.push({ match: m, compId, groupId: g.id });
+        }
+        return { ...g, matches: [] };
       });
-      groupsPerComp.set(comp.id, groups);
+
+      groupsPerComp.set(compId, groups);
     }
 
     const scheduled = scheduleMatches(
@@ -341,8 +349,6 @@ export default function SetupPage() {
       0
     );
 
-    // Right-align rounds so finals/kleine finales from different bracket sizes
-    // land in the same time slots instead of overlapping with earlier rounds
     for (let offset = maxRoundCount - 1; offset >= 0; offset--) {
       let fieldIdx = 0;
       for (const [, rounds] of knockoutRoundsPerComp) {
@@ -477,13 +483,25 @@ export default function SetupPage() {
         </div>
       )}
 
-      <button
-        onClick={handleGenerate}
-        disabled={!canGenerate}
-        className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        Schema genereren & groepen loten
-      </button>
+      {draftGroups ? (
+        <GroupDraftEditor
+          competitions={tournament.competitions.filter((c) =>
+            draftGroups.has(c.id)
+          )}
+          draftGroups={draftGroups}
+          onDraftChange={handleDraftChange}
+          onConfirm={handleConfirm}
+          onRedraw={handleDraw}
+        />
+      ) : (
+        <button
+          onClick={handleDraw}
+          disabled={!canGenerate}
+          className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          Groepen loten
+        </button>
+      )}
     </div>
   );
 }

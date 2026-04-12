@@ -839,12 +839,66 @@ describe("advanceWinner", () => {
   });
 
   describe("draw scenario", () => {
-    it("treats draw as home team advances (or handles gracefully)", () => {
+    it("draw without penalties does not advance", () => {
       let rounds = seedAndSetupBracket4();
       const m0Id = rounds[0].matches[0].id;
       rounds = setScore(rounds, m0Id, 1, 1);
-      // Should not throw — implementation decides draw handling
-      expect(() => advanceWinner(rounds, m0Id)).not.toThrow();
+      const advanced = advanceWinner(rounds, m0Id);
+      // No penalties → no advancement
+      expect(advanced[2].matches[0].homeTeamId).toBeNull();
+    });
+  });
+
+  describe("penalty shootout", () => {
+    function setScoreWithPenalties(
+      rounds: KnockoutRound[],
+      matchId: string,
+      home: number,
+      away: number,
+      penHome: number,
+      penAway: number,
+    ): KnockoutRound[] {
+      return rounds.map((r) => ({
+        ...r,
+        matches: r.matches.map((m) =>
+          m.id === matchId ? { ...m, score: { home, away, penHome, penAway } } : { ...m },
+        ),
+      }));
+    }
+
+    it("home team wins on penalties → home advances", () => {
+      let rounds = seedAndSetupBracket4();
+      const m0Id = rounds[0].matches[0].id;
+      rounds = setScoreWithPenalties(rounds, m0Id, 1, 1, 4, 3);
+      const advanced = advanceWinner(rounds, m0Id);
+      expect(advanced[2].matches[0].homeTeamId).toBe(rounds[0].matches[0].homeTeamId);
+      expect(advanced[1].matches[0].homeTeamId).toBe(rounds[0].matches[0].awayTeamId);
+    });
+
+    it("away team wins on penalties → away advances", () => {
+      let rounds = seedAndSetupBracket4();
+      const m0Id = rounds[0].matches[0].id;
+      rounds = setScoreWithPenalties(rounds, m0Id, 2, 2, 3, 5);
+      const advanced = advanceWinner(rounds, m0Id);
+      expect(advanced[2].matches[0].homeTeamId).toBe(rounds[0].matches[0].awayTeamId);
+      expect(advanced[1].matches[0].homeTeamId).toBe(rounds[0].matches[0].homeTeamId);
+    });
+
+    it("draw with equal penalties does not advance", () => {
+      let rounds = seedAndSetupBracket4();
+      const m0Id = rounds[0].matches[0].id;
+      rounds = setScoreWithPenalties(rounds, m0Id, 0, 0, 3, 3);
+      const advanced = advanceWinner(rounds, m0Id);
+      expect(advanced[2].matches[0].homeTeamId).toBeNull();
+    });
+
+    it("penalties ignored when regular score is not a draw", () => {
+      let rounds = seedAndSetupBracket4();
+      const m0Id = rounds[0].matches[0].id;
+      rounds = setScoreWithPenalties(rounds, m0Id, 3, 1, 2, 5);
+      const advanced = advanceWinner(rounds, m0Id);
+      // Regular score decides — home wins 3-1, penalties ignored
+      expect(advanced[2].matches[0].homeTeamId).toBe(rounds[0].matches[0].homeTeamId);
     });
   });
 
@@ -1353,7 +1407,7 @@ describe("additional edge cases", () => {
       );
     });
 
-    it("score 0-0 draw: home team advances as tiebreak", () => {
+    it("score 0-0 draw without penalties: no advancement", () => {
       let rounds = generateKnockoutRounds(4);
       rounds = seedBracket(rounds, [
         { teamId: "a", groupId: "A" },
@@ -1365,13 +1419,11 @@ describe("additional edge cases", () => {
       rounds = rounds.map((r) => ({
         ...r,
         matches: r.matches.map((m) =>
-          m.id === m0Id ? { ...m, score: { home: 0, away: 0 } } : { ...m }
+          m.id === m0Id ? { ...m, score: { home: 0, away: 0 } } : { ...m },
         ),
       }));
       const advanced = advanceWinner(rounds, m0Id);
-      expect(advanced[2].matches[0].homeTeamId).toBe(
-        rounds[0].matches[0].homeTeamId
-      );
+      expect(advanced[2].matches[0].homeTeamId).toBeNull();
     });
 
     it("advancing does not affect other matches in the same round", () => {

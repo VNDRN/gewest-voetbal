@@ -203,10 +203,11 @@ export function advanceWinner(
   } else if (match.score.away > match.score.home) {
     winnerId = match.awayTeamId;
     loserId = match.homeTeamId;
+  } else if (match.score.penHome != null && match.score.penAway != null && match.score.penHome !== match.score.penAway) {
+    winnerId = match.score.penHome > match.score.penAway ? match.homeTeamId : match.awayTeamId;
+    loserId = match.score.penHome > match.score.penAway ? match.awayTeamId : match.homeTeamId;
   } else {
-    // Draw — home team advances as tiebreak
-    winnerId = match.homeTeamId;
-    loserId = match.awayTeamId;
+    return result;
   }
 
   const nextMatchIdx = Math.floor(matchIdx / 2);

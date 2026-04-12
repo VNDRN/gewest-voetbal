@@ -26,6 +26,16 @@ function MatchSlot({
 
   const canClick = match.homeTeamId && match.awayTeamId;
   const isComplete = match.score !== null;
+  const hasPenalties = isComplete && match.score!.home === match.score!.away
+    && match.score!.penHome != null && match.score!.penAway != null;
+  const homeWins = isComplete && (
+    match.score!.home > match.score!.away
+    || (hasPenalties && match.score!.penHome! > match.score!.penAway!)
+  );
+  const awayWins = isComplete && (
+    match.score!.away > match.score!.home
+    || (hasPenalties && match.score!.penAway! > match.score!.penHome!)
+  );
 
   return (
     <button
@@ -42,8 +52,13 @@ function MatchSlot({
           {homeName}
         </span>
         {isComplete && (
-          <span className={`font-bold ${match.score!.home > match.score!.away ? "text-green-600" : "text-gray-500"}`}>
-            {match.score!.home}
+          <span className="flex items-center gap-1">
+            <span className={`font-bold ${homeWins ? "text-green-600" : "text-gray-500"}`}>
+              {match.score!.home}
+            </span>
+            {hasPenalties && (
+              <span className="text-[10px] font-semibold text-amber-600">({match.score!.penHome})</span>
+            )}
           </span>
         )}
       </div>
@@ -53,8 +68,13 @@ function MatchSlot({
           {awayName}
         </span>
         {isComplete && (
-          <span className={`font-bold ${match.score!.away > match.score!.home ? "text-green-600" : "text-gray-500"}`}>
-            {match.score!.away}
+          <span className="flex items-center gap-1">
+            <span className={`font-bold ${awayWins ? "text-green-600" : "text-gray-500"}`}>
+              {match.score!.away}
+            </span>
+            {hasPenalties && (
+              <span className="text-[10px] font-semibold text-amber-600">({match.score!.penAway})</span>
+            )}
           </span>
         )}
       </div>

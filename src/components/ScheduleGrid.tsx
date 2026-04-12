@@ -139,22 +139,26 @@ export default function ScheduleGrid({
                       </>
                     );
 
+                    const canClick = !isKnockout || (match.homeTeamId && match.awayTeamId);
+
                     return (
                       <td
                         key={field}
                         className="border border-gray-200 px-2 py-1.5"
                       >
-                        {isKnockout ? (
-                          <div className="rounded-lg border border-dashed border-gray-300 p-1.5">
-                            {inner}
-                          </div>
-                        ) : (
+                        {canClick ? (
                           <button
                             onClick={() => onMatchClick(match)}
-                            className="w-full rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50"
+                            className={`w-full rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50 ${
+                              isKnockout ? "border border-dashed border-gray-300" : ""
+                            }`}
                           >
                             {inner}
                           </button>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-gray-300 p-1.5">
+                            {inner}
+                          </div>
                         )}
                       </td>
                     );

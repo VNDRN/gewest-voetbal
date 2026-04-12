@@ -16,6 +16,9 @@ export function loadState(): Tournament | null {
   if (!raw) return null;
   try {
     const state = JSON.parse(raw) as Tournament;
+    if (!state.config.breaks) {
+      state.config.breaks = [];
+    }
     state.competitions = state.competitions.map((c) => ({
       ...c,
       name: COMPETITION_NAME_MAP[c.name] ?? c.name,

@@ -164,6 +164,7 @@ export default function SchedulePage() {
           fieldCount={tournament.config.fieldCount}
           startTime={tournament.config.startTime}
           slotDurationMinutes={tournament.config.slotDurationMinutes}
+          breaks={tournament.config.breaks}
           teamNames={teamNames}
           onMatchClick={setEditingMatch}
         />

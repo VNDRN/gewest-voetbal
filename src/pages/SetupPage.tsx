@@ -13,6 +13,7 @@ import {
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
 import { generateKnockoutRounds } from "../engine/knockout";
+import { formatTime } from "../engine/time";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -196,15 +197,6 @@ export default function SetupPage() {
   const tournament = useTournament();
   const dispatch = useTournamentDispatch();
   const navigate = useNavigate();
-
-  function formatTime(slot: number): string {
-    const { startTime, slotDurationMinutes } = tournament.config;
-    const [h, m] = startTime.split(":").map(Number);
-    const total = h * 60 + m + slot * slotDurationMinutes;
-    const hours = Math.floor(total / 60).toString().padStart(2, "0");
-    const mins = (total % 60).toString().padStart(2, "0");
-    return `${hours}:${mins}`;
-  }
 
   const estimatedSlots = useMemo(() => {
     let totalGroupMatches = 0;
@@ -468,8 +460,8 @@ export default function SetupPage() {
 
       {estimatedSlots > 0 && (
         <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-          Geschat: {estimatedSlots} tijdsloten ({formatTime(0)} -{" "}
-          {formatTime(estimatedSlots)})
+          Geschat: {estimatedSlots} tijdsloten ({formatTime(0, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)} -{" "}
+          {formatTime(estimatedSlots, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)})
         </div>
       )}
 

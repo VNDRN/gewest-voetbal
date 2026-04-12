@@ -1,3 +1,6 @@
+import { formatTime } from "../engine/time";
+import type { ScheduleBreak } from "../types";
+
 type ScheduledMatch = {
   id: string;
   homeTeamId: string | null;
@@ -17,27 +20,17 @@ type Props = {
   fieldCount: number;
   startTime: string;
   slotDurationMinutes: number;
+  breaks: ScheduleBreak[];
   teamNames: Map<string, string>;
   onMatchClick: (match: ScheduledMatch) => void;
 };
-
-function formatTime(
-  slot: number,
-  startTime: string,
-  slotDuration: number
-): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const total = h * 60 + m + slot * slotDuration;
-  const hours = Math.floor(total / 60).toString().padStart(2, "0");
-  const mins = (total % 60).toString().padStart(2, "0");
-  return `${hours}:${mins}`;
-}
 
 export default function ScheduleGrid({
   matches,
   fieldCount,
   startTime,
   slotDurationMinutes,
+  breaks,
   teamNames,
   onMatchClick,
 }: Props) {
@@ -71,7 +64,7 @@ export default function ScheduleGrid({
           {slots.map((slot) => (
             <tr key={slot}>
               <td className="border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-600 whitespace-nowrap">
-                {formatTime(slot, startTime, slotDurationMinutes)}
+                {formatTime(slot, startTime, slotDurationMinutes, breaks)}
               </td>
               {Array.from({ length: fieldCount }, (_, field) => {
                 const match = grid.get(`${slot}-${field}`);

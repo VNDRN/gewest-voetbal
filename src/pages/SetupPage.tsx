@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useTournament,
   useTournamentDispatch,
@@ -193,6 +194,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
 export default function SetupPage() {
   const tournament = useTournament();
   const dispatch = useTournamentDispatch();
+  const navigate = useNavigate();
 
   function formatTime(slot: number): string {
     const { startTime, slotDurationMinutes } = tournament.config;
@@ -308,6 +310,8 @@ export default function SetupPage() {
         });
       }
     }
+
+    navigate("/groups");
   }
 
   const canGenerate = tournament.competitions.some(

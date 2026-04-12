@@ -59,6 +59,16 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
     : 1;
 
   useEffect(() => {
+    if (groupOptions.length > 0 && !selectedOption) {
+      dispatch({
+        type: "UPDATE_COMPETITION_CONFIG",
+        competitionId: competition.id,
+        config: { groupSize: groupOptions[0].sizes[0] },
+      });
+    }
+  }, [groupOptions, selectedOption, competition.id, dispatch]);
+
+  useEffect(() => {
     if (competition.config.advancingPerGroup > maxAdvancing) {
       dispatch({
         type: "UPDATE_COMPETITION_CONFIG",

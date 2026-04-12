@@ -167,6 +167,22 @@ export default function SchedulePage() {
           breaks={tournament.config.breaks}
           teamNames={teamNames}
           onMatchClick={setEditingMatch}
+          onAddBreak={(afterTimeSlot) =>
+            dispatch({
+              type: "ADD_BREAK",
+              breakItem: {
+                id: crypto.randomUUID(),
+                afterTimeSlot,
+                durationMinutes: 10,
+              },
+            })
+          }
+          onUpdateBreak={(breakId, durationMinutes) =>
+            dispatch({ type: "UPDATE_BREAK", breakId, durationMinutes })
+          }
+          onRemoveBreak={(breakId) =>
+            dispatch({ type: "REMOVE_BREAK", breakId })
+          }
         />
       </div>
 

@@ -6,6 +6,7 @@ import {
   useDroppable,
   type DragStartEvent,
   type DragEndEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
 import { useDndSensors } from "../hooks/useDndSensors";
 import {
@@ -344,7 +345,7 @@ export default function ScheduleGrid({
     );
   }
 
-  function handleDragOver(event: { over: { id: string | number } | null }) {
+  function handleDragOver(event: DragOverEvent) {
     setOverId(event.over ? String(event.over.id) : null);
   }
 
@@ -385,7 +386,7 @@ export default function ScheduleGrid({
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver as never}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
@@ -448,11 +449,10 @@ export default function ScheduleGrid({
                         return (
                           <td key={field} className="border border-card-hair p-1">
                             <div
-                              className="flex min-h-[96px] items-center justify-center rounded-md border border-card-hair text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted"
+                              className="flex min-h-[96px] items-center justify-center rounded-md border border-card-hair bg-surface text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted"
                               style={{
                                 backgroundImage:
-                                  "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,18,77,0.08) 6px 7px)",
-                                backgroundColor: "var(--color-surface)",
+                                  "repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in oklab, var(--color-ink) 8%, transparent) 6px 7px)",
                               }}
                             >
                               Andere competitie

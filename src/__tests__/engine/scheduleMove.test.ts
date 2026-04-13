@@ -254,6 +254,42 @@ describe("validateChange — knockout tier ordering", () => {
   });
 });
 
+import { changeFromDragEnd } from "../../engine/scheduleMove";
+
+describe("changeFromDragEnd", () => {
+  it("returns a move for drop on an empty cell", () => {
+    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
+    const c = changeFromDragEnd("a", "cell-2-1", matches);
+    expect(c).toEqual({ kind: "move", matchId: "a", toSlot: 2, toField: 1 });
+  });
+
+  it("returns a swap for drop on an occupied cell", () => {
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", timeSlot: 2, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const c = changeFromDragEnd("a", "cell-2-1", matches);
+    expect(c).toEqual({ kind: "swap", matchAId: "a", matchBId: "b" });
+  });
+
+  it("returns an insert for drop on an insert id", () => {
+    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
+    const c = changeFromDragEnd("a", "insert-1-2", matches);
+    expect(c).toEqual({ kind: "insert", matchId: "a", atSlot: 1, toField: 2 });
+  });
+
+  it("returns null for unrecognized over id", () => {
+    const matches = [m({ id: "a" })];
+    expect(changeFromDragEnd("a", "nope", matches)).toBeNull();
+  });
+
+  it("returns null when dropped on source cell", () => {
+    const matches = [m({ id: "a", timeSlot: 3, fieldIndex: 1 })];
+    const c = changeFromDragEnd("a", "cell-3-1", matches);
+    expect(c).toBeNull();
+  });
+});
+
 describe("classifyTargets", () => {
   const fieldCount = 2;
   const breaks: ScheduleBreak[] = [];

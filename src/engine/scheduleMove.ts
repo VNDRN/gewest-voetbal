@@ -222,6 +222,40 @@ export function classifyTargets(
   return map;
 }
 
+export function changeFromDragEnd(
+  activeMatchId: string,
+  overId: string,
+  matches: ScheduledMatch[]
+): Change | null {
+  if (overId.startsWith("cell-")) {
+    const parts = overId.split("-");
+    if (parts.length !== 3) return null;
+    const slot = Number(parts[1]);
+    const field = Number(parts[2]);
+    if (!Number.isFinite(slot) || !Number.isFinite(field)) return null;
+    const active = matches.find((m) => m.id === activeMatchId);
+    if (active && active.timeSlot === slot && active.fieldIndex === field) {
+      return null;
+    }
+    const occupant = matches.find(
+      (m) => m.timeSlot === slot && m.fieldIndex === field
+    );
+    if (!occupant) {
+      return { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field };
+    }
+    return { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id };
+  }
+  if (overId.startsWith("insert-")) {
+    const parts = overId.split("-");
+    if (parts.length !== 3) return null;
+    const atSlot = Number(parts[1]);
+    const field = Number(parts[2]);
+    if (!Number.isFinite(atSlot) || !Number.isFinite(field)) return null;
+    return { kind: "insert", matchId: activeMatchId, atSlot, toField: field };
+  }
+  return null;
+}
+
 export function applyChange(
   matches: ScheduledMatch[],
   change: Change

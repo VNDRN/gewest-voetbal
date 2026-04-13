@@ -8,11 +8,11 @@ function nextPowerOf2(n: number): number {
 }
 
 export function getGroupOptions(teamCount: number): GroupOption[] {
-  if (teamCount < 6) return [];
+  if (teamCount < 4) return [];
 
   const MIN_SIZE = 3;
   const MAX_SIZE = 5;
-  const MIN_GROUPS = 2;
+  const MIN_GROUPS = 1;
   const options: GroupOption[] = [];
   const seen = new Set<string>();
 
@@ -99,4 +99,19 @@ export function calculateBracketFill(
 export function maxAdvancingPerGroup(sizes: number[]): number {
   if (sizes.length === 0) return 0;
   return Math.max(1, Math.min(...sizes) - 1);
+}
+
+export function getAdvancingOptions(
+  groupCount: number,
+  sizes: number[]
+): number[] {
+  if (sizes.length === 0) return [];
+
+  if (groupCount === 1) {
+    const teamsInGroup = sizes[0];
+    return [2, 4].filter((n) => n <= teamsInGroup);
+  }
+
+  const max = maxAdvancingPerGroup(sizes);
+  return Array.from({ length: max }, (_, i) => i + 1);
 }

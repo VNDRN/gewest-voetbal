@@ -144,8 +144,8 @@ export default function ScheduleGrid({
 
                     const pillClass =
                       meta.pillVariant === "dames"
-                        ? "bg-brand/10 text-brand"
-                        : "bg-ink/10 text-ink";
+                        ? "bg-brand/8 text-brand"
+                        : "bg-ink/8 text-ink";
 
                     const cardClass = `flex w-full flex-col gap-4 rounded-lg border bg-card p-3 text-left transition-colors ${
                       isTbdKnockout

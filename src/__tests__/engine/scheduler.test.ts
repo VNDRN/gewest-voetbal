@@ -794,4 +794,58 @@ describe("scheduleMatches", () => {
       });
     }
   });
+
+  describe("cross-competition packing density (issue #22 follow-up)", () => {
+    function slotMatchCounts(scheduled: Match[]): number[] {
+      const counts = new Map<number, number>();
+      for (const m of scheduled) {
+        counts.set(m.timeSlot, (counts.get(m.timeSlot) ?? 0) + 1);
+      }
+      const maxSlot = Math.max(...counts.keys());
+      const out: number[] = [];
+      for (let s = 0; s <= maxSlot; s++) out.push(counts.get(s) ?? 0);
+      return out;
+    }
+
+    it("interleaves a 5-team competition with two 4-team competitions on 4 fields", () => {
+      // Mirrors real tournament: men's (2 groups of 4) + women's (1 group of 5) on 4 fields.
+      // 12 men's + 10 women's = 22 matches.
+      // Women's needs ≥5 slots (5 rounds of 2 matches, can't pack more than 2/slot).
+      // Men's needs ≥3 slots.
+      // Optimal total = 6 slots (5 full × 4 + 1 tail × 2).
+      const mA = roundRobin(["m1", "m2", "m3", "m4"], "mA");
+      const mB = roundRobin(["m5", "m6", "m7", "m8"], "mB");
+      const w = roundRobin(["w1", "w2", "w3", "w4", "w5"], "wA");
+      const result = scheduleMatches([...mA, ...mB, ...w], 4);
+
+      assertHardConstraints(result, 4);
+      expect(result).toHaveLength(22);
+
+      const maxSlot = Math.max(...result.map((m) => m.timeSlot));
+      expect(maxSlot).toBeLessThanOrEqual(5); // 6 slots indexed 0..5
+    });
+
+    it("doesn't strand the longest competition into trailing sparse slots", () => {
+      // A short competition (2×3 teams, 6 matches in 3 rounds) alongside a long
+      // one (1×5 teams, 10 matches in 5 rounds) on 2 fields.
+      // Short needs 3 slots; long needs 5. Total matches = 16 → ⌈16/2⌉ = 8 slots min.
+      // With proper interleaving we should hit 8 slots.
+      const short1 = roundRobin(["s1a", "s1b", "s1c"], "s1");
+      const short2 = roundRobin(["s2a", "s2b", "s2c"], "s2");
+      const long = roundRobin(["l1", "l2", "l3", "l4", "l5"], "L");
+      const result = scheduleMatches([...short1, ...short2, ...long], 2);
+
+      assertHardConstraints(result, 2);
+      expect(result).toHaveLength(16);
+
+      const maxSlot = Math.max(...result.map((m) => m.timeSlot));
+      expect(maxSlot).toBeLessThanOrEqual(7); // 8 slots indexed 0..7
+
+      const counts = slotMatchCounts(result);
+      // Monotonically non-increasing once we dip below 2.
+      for (let i = 1; i < counts.length; i++) {
+        expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+      }
+    });
+  });
 });

@@ -43,7 +43,16 @@ export function applyChange(
         return m;
       });
     }
-    case "insert":
-      throw new Error(`applyChange: insert not implemented yet`);
+    case "insert": {
+      return matches.map((m) => {
+        if (m.id === change.matchId) {
+          return { ...m, timeSlot: change.atSlot, fieldIndex: change.toField };
+        }
+        if (m.timeSlot >= change.atSlot) {
+          return { ...m, timeSlot: m.timeSlot + 1 };
+        }
+        return m;
+      });
+    }
   }
 }

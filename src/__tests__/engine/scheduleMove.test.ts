@@ -57,3 +57,42 @@ describe("applyChange — swap", () => {
     expect(b.fieldIndex).toBe(0);
   });
 });
+
+describe("applyChange — insert", () => {
+  it("shifts every match with timeSlot >= atSlot by +1 and places the moved match at (atSlot, toField)", () => {
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", timeSlot: 1, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
+      m({ id: "c", timeSlot: 2, fieldIndex: 0, homeTeamId: "e", awayTeamId: "f" }),
+    ];
+    const next = applyChange(matches, {
+      kind: "insert",
+      matchId: "c",
+      atSlot: 1,
+      toField: 2,
+    });
+    const a = next.find((n) => n.id === "a")!;
+    const b = next.find((n) => n.id === "b")!;
+    const c = next.find((n) => n.id === "c")!;
+    expect(a.timeSlot).toBe(0);
+    expect(b.timeSlot).toBe(2); // shifted from 1 to 2
+    expect(c.timeSlot).toBe(1); // placed at atSlot
+    expect(c.fieldIndex).toBe(2);
+  });
+
+  it("does not shift the inserted match when its original slot is >= atSlot", () => {
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", timeSlot: 3, fieldIndex: 0, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const next = applyChange(matches, {
+      kind: "insert",
+      matchId: "b",
+      atSlot: 1,
+      toField: 1,
+    });
+    const b = next.find((n) => n.id === "b")!;
+    expect(b.timeSlot).toBe(1);
+    expect(b.fieldIndex).toBe(1);
+  });
+});

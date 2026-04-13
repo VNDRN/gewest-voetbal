@@ -100,3 +100,18 @@ export function maxAdvancingPerGroup(sizes: number[]): number {
   if (sizes.length === 0) return 0;
   return Math.max(1, Math.min(...sizes) - 1);
 }
+
+export function getAdvancingOptions(
+  groupCount: number,
+  sizes: number[]
+): number[] {
+  if (sizes.length === 0) return [];
+
+  if (groupCount === 1) {
+    const teamsInGroup = sizes[0];
+    return [2, 4].filter((n) => n <= teamsInGroup);
+  }
+
+  const max = maxAdvancingPerGroup(sizes);
+  return Array.from({ length: max }, (_, i) => i + 1);
+}

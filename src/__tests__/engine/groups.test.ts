@@ -4,6 +4,7 @@ import {
   generateRoundRobinMatches,
   calculateBracketFill,
   maxAdvancingPerGroup,
+  getAdvancingOptions,
 } from "../../engine/groups";
 
 describe("getGroupOptions", () => {
@@ -579,6 +580,32 @@ describe("maxAdvancingPerGroup", () => {
     const mixed = options.find((o) => o.groupCount === 3)!;
     expect(mixed.sizes).toEqual([4, 3, 3]);
     expect(maxAdvancingPerGroup(mixed.sizes)).toBe(2);
+  });
+});
+
+describe("getAdvancingOptions", () => {
+  it("returns [2, 4] for a single group of 4", () => {
+    expect(getAdvancingOptions(1, [4])).toEqual([2, 4]);
+  });
+
+  it("returns [2, 4] for a single group of 5", () => {
+    expect(getAdvancingOptions(1, [5])).toEqual([2, 4]);
+  });
+
+  it("returns [1, 2] for two groups of 3 (multi-group, top-1..top-max)", () => {
+    expect(getAdvancingOptions(2, [3, 3])).toEqual([1, 2]);
+  });
+
+  it("returns [1, 2, 3] for three groups of 4", () => {
+    expect(getAdvancingOptions(3, [4, 4, 4])).toEqual([1, 2, 3]);
+  });
+
+  it("returns [1, 2, 3, 4] for four groups of 5", () => {
+    expect(getAdvancingOptions(4, [5, 5, 5, 5])).toEqual([1, 2, 3, 4]);
+  });
+
+  it("returns [] for empty sizes", () => {
+    expect(getAdvancingOptions(0, [])).toEqual([]);
   });
 });
 

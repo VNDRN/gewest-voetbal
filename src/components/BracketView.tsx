@@ -48,7 +48,7 @@ function MatchSlot({
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className={`font-semibold text-ink ${!match.homeTeamId ? "italic text-ink-muted" : ""}`}>
+        <span className={`font-semibold ${!match.homeTeamId ? "italic text-ink-muted" : "text-ink"}`}>
           {homeName}
         </span>
         {isComplete && (
@@ -64,7 +64,7 @@ function MatchSlot({
       </div>
       <div className="my-1 border-t border-card-hair" />
       <div className="flex items-center justify-between">
-        <span className={`font-semibold text-ink ${!match.awayTeamId ? "italic text-ink-muted" : ""}`}>
+        <span className={`font-semibold ${!match.awayTeamId ? "italic text-ink-muted" : "text-ink"}`}>
           {awayName}
         </span>
         {isComplete && (

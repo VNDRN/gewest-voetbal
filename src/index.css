@@ -20,7 +20,7 @@
   --color-card-hair: #ECE6D7;
 
   /* Semantic aliases */
-  --color-destructive: #E1143C;
+  --color-destructive: var(--color-brand);
   --color-advancing-tint: rgba(0, 18, 77, 0.05);
 
   /* Team dot palette (setup-screen identity dots) */

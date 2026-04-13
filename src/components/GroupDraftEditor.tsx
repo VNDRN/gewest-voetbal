@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -30,6 +30,14 @@ export default function GroupDraftEditor({
   } | null>(null);
 
   const sensors = useDndSensors();
+
+  useEffect(() => {
+    if (!activeTeam) return;
+    document.body.classList.add("is-dragging");
+    return () => {
+      document.body.classList.remove("is-dragging");
+    };
+  }, [activeTeam]);
 
   const allTeamNames = new Map<string, string>();
   for (const comp of competitions) {

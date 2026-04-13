@@ -32,8 +32,8 @@ export function scheduledMatchMeta(match: ScheduledMatch): MatchMeta {
 
   if (match.phase === "knockout") {
     return {
-      pillLabel: match.groupName,
-      rightEyebrow: competitionLabel,
+      pillLabel: competitionLabel,
+      rightEyebrow: match.groupName,
       pillVariant,
     };
   }
@@ -157,17 +157,17 @@ export default function ScheduleGrid({
                       <>
                         <div className="flex items-center justify-between gap-2">
                           <span
-                            className={`rounded px-1.5 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}
+                            className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}
                           >
                             {meta.pillLabel}
                           </span>
-                          <span className="text-[10px] font-semibold text-ink-muted">
+                          <span className="text-[11px] font-medium text-ink-muted">
                             {meta.rightEyebrow}
                           </span>
                         </div>
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                           <span
-                            className={`truncate text-right text-[13px] ${
+                            className={`truncate text-right text-[14px] ${
                               homeIsTbd
                                 ? "italic font-medium text-ink-muted"
                                 : "font-semibold text-ink"
@@ -189,7 +189,7 @@ export default function ScheduleGrid({
                             </span>
                           )}
                           <span
-                            className={`truncate text-left text-[13px] ${
+                            className={`truncate text-left text-[14px] ${
                               awayIsTbd
                                 ? "italic font-medium text-ink-muted"
                                 : "font-semibold text-ink"

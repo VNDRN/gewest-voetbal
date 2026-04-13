@@ -37,13 +37,13 @@ describe("scheduledMatchMeta", () => {
     });
   });
 
-  it("labels a knockout match with round name and competition eyebrow", () => {
+  it("labels a knockout match with competition in pill and round name eyebrow", () => {
     const meta = scheduledMatchMeta(
       makeMatch({ phase: "knockout", groupName: "Halve finale" })
     );
     expect(meta).toEqual({
-      pillLabel: "Halve finale",
-      rightEyebrow: "Heren",
+      pillLabel: "Heren",
+      rightEyebrow: "Halve finale",
       pillVariant: "heren",
     });
   });
@@ -57,8 +57,8 @@ describe("scheduledMatchMeta", () => {
       })
     );
     expect(meta).toEqual({
-      pillLabel: "Finale",
-      rightEyebrow: "Dames",
+      pillLabel: "Dames",
+      rightEyebrow: "Finale",
       pillVariant: "dames",
     });
   });

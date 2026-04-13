@@ -299,6 +299,7 @@ export default function ScheduleGrid({
   matches,
   allMatches,
   knockoutRoundInfos,
+  filter,
   fieldCount,
   startTime,
   slotDurationMinutes,
@@ -313,10 +314,10 @@ export default function ScheduleGrid({
   const maxSlot = matches.reduce((max, m) => Math.max(max, m.timeSlot), 0);
   const slots = Array.from({ length: maxSlot + 1 }, (_, i) => i);
 
-  const grid = new Map<string, ScheduledMatch>();
-  for (const m of matches) {
-    grid.set(`${m.timeSlot}-${m.fieldIndex}`, m);
-  }
+  const filteredGrid = new Map<string, ScheduledMatch>();
+  for (const m of matches) filteredGrid.set(`${m.timeSlot}-${m.fieldIndex}`, m);
+  const fullGrid = new Map<string, ScheduledMatch>();
+  for (const m of allMatches) fullGrid.set(`${m.timeSlot}-${m.fieldIndex}`, m);
 
   const breakMap = new Map<number, ScheduleBreak>();
   for (const b of breaks) {
@@ -432,11 +433,33 @@ export default function ScheduleGrid({
                       {formatTime(slot, startTime, slotDurationMinutes, breaks)}
                     </td>
                     {Array.from({ length: fieldCount }, (_, field) => {
+                      const cellKey = `${slot}-${field}`;
                       const cellId = `cell-${slot}-${field}`;
-                      const match = grid.get(`${slot}-${field}`);
+                      const match = filteredGrid.get(cellKey);
+                      const hiddenMatch =
+                        !match && filter !== "all"
+                          ? fullGrid.get(cellKey)
+                          : undefined;
                       const cls = activeId ? targetMap.get(cellId) : undefined;
                       const stateCls = cellStateClass(cls);
                       const isSource = activeId && match?.id === activeId;
+
+                      if (!match && hiddenMatch) {
+                        return (
+                          <td key={field} className="border border-card-hair p-1">
+                            <div
+                              className="flex min-h-[96px] items-center justify-center rounded-md border border-card-hair text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted"
+                              style={{
+                                backgroundImage:
+                                  "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,18,77,0.08) 6px 7px)",
+                                backgroundColor: "var(--color-surface)",
+                              }}
+                            >
+                              Andere competitie
+                            </div>
+                          </td>
+                        );
+                      }
 
                       if (!match) {
                         return (

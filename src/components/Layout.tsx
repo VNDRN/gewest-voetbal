@@ -160,7 +160,9 @@ export default function Layout() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={closeResetModal}
+              aria-label="Sluiten"
               className="absolute right-4 top-4 text-ink-muted hover:text-ink"
             >
               ✕

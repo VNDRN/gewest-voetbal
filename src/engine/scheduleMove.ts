@@ -1,4 +1,5 @@
 import type { ScheduledMatch } from "../components/ScheduleGrid";
+import type { ScheduleBreak } from "../types";
 
 export type KnockoutRoundInfo = {
   competitionId: string;
@@ -151,6 +152,74 @@ export function validateChange(
     return { ok: false, reason: "round-order" };
   }
   return { ok: true, next };
+}
+
+export type TargetClass = "valid-move" | "valid-swap" | "valid-insert" | "invalid";
+
+export function classifyTargets(
+  matches: ScheduledMatch[],
+  activeMatchId: string,
+  fieldCount: number,
+  breaks: ScheduleBreak[],
+  context: ValidationContext = { rounds: [] }
+): Map<string, TargetClass> {
+  const map = new Map<string, TargetClass>();
+
+  const active = matches.find((m) => m.id === activeMatchId);
+  if (!active) return map;
+
+  const maxSlot = matches.reduce((max, m) => Math.max(max, m.timeSlot), 0);
+
+  // Cell targets
+  for (let slot = 0; slot <= maxSlot; slot++) {
+    for (let field = 0; field < fieldCount; field++) {
+      const id = `cell-${slot}-${field}`;
+      const occupant = matches.find(
+        (m) => m.timeSlot === slot && m.fieldIndex === field
+      );
+      if (!occupant) {
+        const res = validateChange(
+          matches,
+          { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field },
+          context
+        );
+        map.set(id, res.ok ? "valid-move" : "invalid");
+        continue;
+      }
+      if (occupant.id === activeMatchId) {
+        map.set(id, "valid-move");
+        continue;
+      }
+      const res = validateChange(
+        matches,
+        { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id },
+        context
+      );
+      map.set(id, res.ok ? "valid-swap" : "invalid");
+    }
+  }
+
+  // Insert-row targets: between rows + around breaks
+  const insertPositions = new Set<number>();
+  for (let slot = 0; slot <= maxSlot + 1; slot++) {
+    insertPositions.add(slot);
+  }
+  for (const b of breaks) {
+    insertPositions.add(b.afterTimeSlot + 1);
+  }
+  for (const atSlot of insertPositions) {
+    for (let field = 0; field < fieldCount; field++) {
+      const id = `insert-${atSlot}-${field}`;
+      const res = validateChange(
+        matches,
+        { kind: "insert", matchId: activeMatchId, atSlot, toField: field },
+        context
+      );
+      map.set(id, res.ok ? "valid-insert" : "invalid");
+    }
+  }
+
+  return map;
 }
 
 export function applyChange(

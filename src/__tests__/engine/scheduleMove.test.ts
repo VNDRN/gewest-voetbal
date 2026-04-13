@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { applyChange, validateChange } from "../../engine/scheduleMove";
+import { applyChange, validateChange, classifyTargets } from "../../engine/scheduleMove";
 import type { ScheduledMatch } from "../../components/ScheduleGrid";
+import type { ScheduleBreak } from "../../types";
 
 function m(partial: Partial<ScheduledMatch> = {}): ScheduledMatch {
   return {
@@ -250,5 +251,48 @@ describe("validateChange — knockout tier ordering", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe("round-order");
+  });
+});
+
+describe("classifyTargets", () => {
+  const fieldCount = 2;
+  const breaks: ScheduleBreak[] = [];
+
+  it("marks empty cells as valid-move and occupied cells with no conflict as valid-swap", () => {
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", timeSlot: 0, fieldIndex: 1, homeTeamId: "p", awayTeamId: "q" }),
+      m({ id: "c", timeSlot: 1, fieldIndex: 0, homeTeamId: "r", awayTeamId: "s" }),
+    ];
+    const map = classifyTargets(matches, "a", fieldCount, breaks);
+    expect(map.get("cell-0-0")).toBe("valid-move"); // source cell is itself a valid target (no-op, but not rejected)
+    expect(map.get("cell-0-1")).toBe("valid-swap"); // swap a<->b, teams disjoint
+    expect(map.get("cell-1-0")).toBe("valid-swap");
+    expect(map.get("cell-1-1")).toBe("valid-move"); // empty
+  });
+
+  it("marks swap targets that would conflict as invalid", () => {
+    // Corrected fixture: swap a<->b lands (x,y) in slot 1 alongside c (y,r) → team y double-booked
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
+      m({ id: "c", timeSlot: 1, fieldIndex: 1, homeTeamId: "y", awayTeamId: "r" }),
+    ];
+    const map = classifyTargets(matches, "a", fieldCount, breaks);
+    expect(map.get("cell-1-0")).toBe("invalid");
+  });
+
+  it("generates insert ids between every pair of rows and around breaks", () => {
+    const matches = [
+      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", timeSlot: 1, fieldIndex: 0, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const withBreak: ScheduleBreak[] = [
+      { id: "br1", afterTimeSlot: 0, durationMinutes: 10 },
+    ];
+    const map = classifyTargets(matches, "a", fieldCount, withBreak);
+    expect(map.has("insert-0-0")).toBe(true); // above row 0
+    expect(map.has("insert-1-0")).toBe(true); // between slots 0 and 1 (also bracketing break)
+    expect(map.has("insert-2-0")).toBe(true); // below slot 1
   });
 });

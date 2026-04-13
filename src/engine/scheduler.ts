@@ -126,22 +126,38 @@ export function scheduleMatches(matches: Match[], fieldCount: number): Match[] {
     // For complete-K_n groups, rounds are pair-disjoint by construction; for
     // partial graphs the round is a single bucket, so we still need a per-slot
     // team-conflict check below.
-    type Candidate = { match: Match; plan: GroupPlan; minGap: number };
+    type Candidate = {
+      match: Match;
+      plan: GroupPlan;
+      minGap: number;
+      planRemaining: number;
+    };
     const candidates: Candidate[] = [];
     for (const plan of plans) {
       if (plan.active >= plan.rounds.length) continue;
+      let planRemaining = 0;
+      for (let i = plan.active; i < plan.rounds.length; i++) {
+        planRemaining += plan.rounds[i].length;
+      }
       for (const match of plan.rounds[plan.active]) {
         const homeLast = teamLastSlot.get(match.homeTeamId) ?? -Infinity;
         const awayLast = teamLastSlot.get(match.awayTeamId) ?? -Infinity;
         const minGap = Math.min(timeSlot - homeLast, timeSlot - awayLast);
-        candidates.push({ match, plan, minGap });
+        candidates.push({ match, plan, minGap, planRemaining });
       }
     }
 
     if (candidates.length === 0) break;
 
-    // Prefer matches whose teams have rested longer; stable otherwise.
-    candidates.sort((a, b) => b.minGap - a.minGap);
+    // Critical-path first: plans with more matches left dominate, so the
+    // longest competition never idles while a shorter one hogs fields.
+    // Within a tie, prefer teams that have rested longer.
+    candidates.sort((a, b) => {
+      if (a.planRemaining !== b.planRemaining) {
+        return b.planRemaining - a.planRemaining;
+      }
+      return b.minGap - a.minGap;
+    });
 
     const slotTeams = new Set<string>();
     let fieldsUsed = 0;

@@ -86,7 +86,7 @@ export default function GroupDraftEditor({
   return (
     <div className="space-y-6">
       {allErrors.length > 0 && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-xl border border-brand/25 bg-brand/5 p-3 text-sm text-brand">
           {allErrors.map((err, i) => (
             <p key={i}>⚠️ {err}</p>
           ))}
@@ -109,7 +109,7 @@ export default function GroupDraftEditor({
 
           return (
             <div key={comp.id}>
-              <h3 className="mb-3 text-base font-semibold">{comp.name}</h3>
+              <h3 className="display mb-3 text-xl text-ink">{comp.name}</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 {groups.map((group) => (
                   <DroppableGroup
@@ -140,14 +140,14 @@ export default function GroupDraftEditor({
       <div className="flex gap-3">
         <button
           onClick={onRedraw}
-          className="flex-1 rounded-xl border border-indigo-200 bg-indigo-50 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+          className="flex-1 rounded-xl border border-hair bg-card py-3 text-sm font-semibold text-ink hover:bg-surface"
         >
           🔄 Herloten
         </button>
         <button
           onClick={onConfirm}
           disabled={!isValid}
-          className="flex-[2] rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-400"
+          className="flex-[2] rounded-xl bg-ink py-3 text-lg font-bold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-ink/30"
         >
           Schema genereren
         </button>

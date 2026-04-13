@@ -15,7 +15,7 @@ export default function DraggableTeamPill({
 
   if (isDragOverlay) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-sm shadow-lg border-2 border-indigo-400 -rotate-2">
+      <span className="inline-flex items-center gap-2 -rotate-2 rounded-xl border border-brand bg-card px-4 py-2.5 text-sm font-bold text-ink shadow-lg">
         {name}
       </span>
     );
@@ -26,7 +26,7 @@ export default function DraggableTeamPill({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm cursor-grab active:cursor-grabbing ${
+      className={`inline-flex cursor-grab items-center gap-2 rounded-xl border border-card-hair bg-card px-4 py-2.5 text-sm font-bold text-ink active:cursor-grabbing ${
         isDragging ? "opacity-30" : ""
       }`}
     >

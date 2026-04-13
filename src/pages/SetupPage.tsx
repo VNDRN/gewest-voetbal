@@ -79,11 +79,11 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   }, [maxAdvancing, competition.config.advancingPerGroup, competition.id, dispatch]);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <h3 className="mb-4 text-lg font-semibold">{competition.name}</h3>
+    <div className="rounded-2xl border border-card-hair bg-card p-5">
+      <h3 className="display mb-4 text-xl text-ink">{competition.name}</h3>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label className="eyebrow-muted mb-1 block">
           Teams ({competition.teams.length})
         </label>
         <div className="flex gap-2">
@@ -93,11 +93,11 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
             onChange={(e) => setTeamName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addTeam()}
             placeholder="Teamnaam"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
           />
           <button
             onClick={addTeam}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink/90"
           >
             Toevoegen
           </button>
@@ -107,12 +107,12 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
             {competition.teams.map((t) => (
               <span
                 key={t.id}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm"
+                className="inline-flex items-center gap-2 rounded-xl border border-card-hair bg-card px-4 py-2.5 text-sm font-bold text-ink"
               >
                 {t.name}
                 <button
                   onClick={() => removeTeam(t.id)}
-                  className="ml-1 text-gray-400 hover:text-red-500"
+                  className="ml-1 text-ink-muted hover:text-brand"
                 >
                   &times;
                 </button>
@@ -125,7 +125,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
       {groupOptions.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Groepsindeling
             </label>
             <select
@@ -137,7 +137,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
                   config: { groupSize: Number(e.target.value) },
                 })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             >
               {groupOptions.map((o) => (
                 <option key={o.sizes[0]} value={o.sizes[0]}>
@@ -147,7 +147,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Doorgang per groep
             </label>
             <select
@@ -159,7 +159,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
                   config: { advancingPerGroup: Number(e.target.value) },
                 })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             >
               {Array.from({ length: maxAdvancing }, (_, i) => i + 1).map(
                 (n) => (
@@ -174,7 +174,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
       )}
 
       {groupOptions.length > 0 && (
-        <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+        <div className="mt-4 rounded-lg bg-surface p-3 text-sm text-ink-soft">
           <p>
             <strong>Knock-out:</strong>{" "}
             {groupCount * competition.config.advancingPerGroup +
@@ -189,7 +189,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
       )}
 
       {competition.teams.length > 0 && groupOptions.length === 0 && (
-        <p className="mt-3 text-sm text-amber-600">
+        <p className="mt-3 text-sm text-ink-soft">
           Minstens 6 teams nodig voor groepsopties.
         </p>
       )}
@@ -384,11 +384,11 @@ export default function SetupPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-semibold">Toernooi-instellingen</h2>
+      <div className="rounded-2xl border border-card-hair bg-card p-5">
+        <h2 className="display mb-4 text-xl text-ink">Toernooi-instellingen</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           <div className="col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Naam
             </label>
             <input
@@ -397,11 +397,11 @@ export default function SetupPage() {
               onChange={(e) =>
                 dispatch({ type: "UPDATE_NAME", name: e.target.value })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Datum
             </label>
             <input
@@ -410,11 +410,11 @@ export default function SetupPage() {
               onChange={(e) =>
                 dispatch({ type: "UPDATE_DATE", date: e.target.value })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Velden
             </label>
             <input
@@ -428,11 +428,11 @@ export default function SetupPage() {
                   config: { fieldCount: Math.max(1, Number(e.target.value)) },
                 })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Tijdslot (min)
             </label>
             <input
@@ -448,11 +448,11 @@ export default function SetupPage() {
                   },
                 })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="eyebrow-muted mb-1 block">
               Starttijd
             </label>
             <input
@@ -464,7 +464,7 @@ export default function SetupPage() {
                   config: { startTime: e.target.value },
                 })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             />
           </div>
         </div>
@@ -477,7 +477,7 @@ export default function SetupPage() {
       </div>
 
       {estimatedSlots > 0 && (
-        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
+        <div className="rounded-xl border border-card-hair bg-surface p-4 text-sm text-ink-soft">
           Geschat: {estimatedSlots} tijdsloten ({formatTime(0, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)} -{" "}
           {formatTime(estimatedSlots, tournament.config.startTime, tournament.config.slotDurationMinutes, tournament.config.breaks)})
         </div>
@@ -497,7 +497,7 @@ export default function SetupPage() {
         <button
           onClick={handleDraw}
           disabled={!canGenerate}
-          className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="w-full rounded-xl bg-ink py-3 text-lg font-bold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-ink/30"
         >
           Groepen loten
         </button>

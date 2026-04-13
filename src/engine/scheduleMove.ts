@@ -33,8 +33,17 @@ export function applyChange(
           ? { ...m, timeSlot: change.toSlot, fieldIndex: change.toField }
           : m
       );
-    case "swap":
+    case "swap": {
+      const a = matches.find((m) => m.id === change.matchAId);
+      const b = matches.find((m) => m.id === change.matchBId);
+      if (!a || !b) return matches;
+      return matches.map((m) => {
+        if (m.id === a.id) return { ...m, timeSlot: b.timeSlot, fieldIndex: b.fieldIndex };
+        if (m.id === b.id) return { ...m, timeSlot: a.timeSlot, fieldIndex: a.fieldIndex };
+        return m;
+      });
+    }
     case "insert":
-      throw new Error(`applyChange: ${change.kind} not implemented yet`);
+      throw new Error(`applyChange: insert not implemented yet`);
   }
 }

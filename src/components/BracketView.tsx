@@ -41,44 +41,44 @@ function MatchSlot({
     <button
       onClick={canClick ? onClick : undefined}
       disabled={!canClick}
-      className={`w-48 rounded-lg border p-2 text-left text-xs transition-colors ${
+      className={`w-48 rounded-xl border p-3 text-left text-xs transition-colors ${
         canClick
-          ? "border-gray-300 bg-white hover:border-blue-400 hover:shadow-sm cursor-pointer"
-          : "border-dashed border-gray-200 bg-gray-50 cursor-default"
+          ? "border-card-hair bg-card hover:border-ink hover:shadow-sm cursor-pointer"
+          : "border-dashed border-card-hair bg-surface cursor-default"
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className={`font-medium ${!match.homeTeamId ? "text-gray-400 italic" : ""}`}>
+        <span className={`font-semibold ${!match.homeTeamId ? "italic text-ink-muted" : "text-ink"}`}>
           {homeName}
         </span>
         {isComplete && (
           <span className="flex items-center gap-1">
-            <span className={`font-bold ${homeWins ? "text-green-600" : "text-gray-500"}`}>
+            <span className={`font-black tabular-nums ${homeWins ? "text-ink" : "text-ink-muted"}`}>
               {match.score!.home}
             </span>
             {hasPenalties && (
-              <span className="text-[10px] font-semibold text-amber-600">({match.score!.penHome})</span>
+              <span className="text-[10px] font-semibold text-ink-muted">({match.score!.penHome})</span>
             )}
           </span>
         )}
       </div>
-      <div className="my-0.5 border-t border-gray-100" />
+      <div className="my-1 border-t border-card-hair" />
       <div className="flex items-center justify-between">
-        <span className={`font-medium ${!match.awayTeamId ? "text-gray-400 italic" : ""}`}>
+        <span className={`font-semibold ${!match.awayTeamId ? "italic text-ink-muted" : "text-ink"}`}>
           {awayName}
         </span>
         {isComplete && (
           <span className="flex items-center gap-1">
-            <span className={`font-bold ${awayWins ? "text-green-600" : "text-gray-500"}`}>
+            <span className={`font-black tabular-nums ${awayWins ? "text-ink" : "text-ink-muted"}`}>
               {match.score!.away}
             </span>
             {hasPenalties && (
-              <span className="text-[10px] font-semibold text-amber-600">({match.score!.penAway})</span>
+              <span className="text-[10px] font-semibold text-ink-muted">({match.score!.penAway})</span>
             )}
           </span>
         )}
       </div>
-      <div className="mt-1 text-[10px] text-gray-400">
+      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
         R{roundIndex + 1} / {match.id}
       </div>
     </button>
@@ -100,7 +100,7 @@ function RoundColumn({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <h4 className="mb-3 text-sm font-semibold text-gray-700">{name}</h4>
+      <h4 className="eyebrow mb-3">{name}</h4>
       <div className="flex flex-col justify-around gap-4 flex-1">
         {matches.map((match) => (
           <MatchSlot

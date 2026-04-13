@@ -61,41 +61,41 @@ export default function ScoreInput({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-6 text-center text-lg font-semibold">Score invoeren</h3>
+        <h3 className="mb-6 text-center text-lg font-bold text-ink">Score invoeren</h3>
         <div className="flex items-center justify-center gap-6">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">{homeTeam}</span>
+            <span className="text-sm font-semibold text-ink-soft">{homeTeam}</span>
             <input
               type="number"
               min={0}
               value={home}
               onChange={(e) => handleSetHome(Math.max(0, parseInt(e.target.value) || 0))}
-              className="h-16 w-20 rounded-lg border-2 border-gray-300 text-center text-3xl font-bold focus:border-blue-500 focus:outline-none"
+              className="h-16 w-20 rounded-lg border-2 border-card-hair text-center text-3xl font-black tabular-nums text-ink focus:border-ink focus:outline-none"
               autoFocus
             />
           </div>
-          <span className="text-2xl font-bold text-gray-400">-</span>
+          <span className="text-2xl font-medium text-ink-muted">–</span>
           <div className="flex flex-col items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">{awayTeam}</span>
+            <span className="text-sm font-semibold text-ink-soft">{awayTeam}</span>
             <input
               type="number"
               min={0}
               value={away}
               onChange={(e) => handleSetAway(Math.max(0, parseInt(e.target.value) || 0))}
-              className="h-16 w-20 rounded-lg border-2 border-gray-300 text-center text-3xl font-bold focus:border-blue-500 focus:outline-none"
+              className="h-16 w-20 rounded-lg border-2 border-card-hair text-center text-3xl font-black tabular-nums text-ink focus:border-ink focus:outline-none"
             />
           </div>
         </div>
         {isDraw && (
-          <div className="mt-4 border-t-2 border-dashed border-amber-400 pt-4">
-            <div className="mb-2 text-center text-xs font-semibold text-amber-600">
+          <div className="mt-4 border-t-2 border-dashed border-beige/70 pt-4">
+            <div className="eyebrow-muted mb-2 text-center">
               Strafschoppen
             </div>
             <div className="flex items-center justify-center gap-6">
@@ -105,22 +105,22 @@ export default function ScoreInput({
                   min={0}
                   value={penHome}
                   onChange={(e) => setPenHome(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="h-12 w-16 rounded-lg border-2 border-amber-400 bg-amber-50 text-center text-2xl font-bold focus:border-amber-500 focus:outline-none"
+                  className="h-12 w-16 rounded-lg border-2 border-beige bg-beige/20 text-center text-2xl font-bold tabular-nums text-ink focus:border-ink focus:outline-none"
                 />
               </div>
-              <span className="text-xl font-bold text-gray-400">-</span>
+              <span className="text-xl font-medium text-ink-muted">–</span>
               <div className="flex flex-col items-center gap-1">
                 <input
                   type="number"
                   min={0}
                   value={penAway}
                   onChange={(e) => setPenAway(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="h-12 w-16 rounded-lg border-2 border-amber-400 bg-amber-50 text-center text-2xl font-bold focus:border-amber-500 focus:outline-none"
+                  className="h-12 w-16 rounded-lg border-2 border-beige bg-beige/20 text-center text-2xl font-bold tabular-nums text-ink focus:border-ink focus:outline-none"
                 />
               </div>
             </div>
             {penaltyAlsoDraw && (
-              <p className="mt-2 text-center text-xs text-red-500">
+              <p className="mt-2 text-center text-xs text-ink-soft">
                 Strafschoppen mogen niet gelijk zijn
               </p>
             )}
@@ -129,17 +129,17 @@ export default function ScoreInput({
         <div className="mt-6 flex justify-center gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-hair bg-card px-5 py-2 text-sm font-semibold text-ink hover:bg-surface"
           >
             Annuleren
           </button>
           <button
             onClick={handleSave}
             disabled={penaltyAlsoDraw}
-            className={`rounded-lg px-5 py-2 text-sm font-medium text-white ${
+            className={`rounded-lg px-5 py-2 text-sm font-semibold text-white ${
               penaltyAlsoDraw
-                ? "cursor-not-allowed bg-blue-300"
-                : "bg-blue-600 hover:bg-blue-700"
+                ? "cursor-not-allowed bg-ink/30"
+                : "bg-ink hover:bg-ink/90"
             }`}
           >
             Opslaan

@@ -80,57 +80,64 @@ export default function Layout() {
   }, [showResetModal, closeResetModal]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-surface">
+      <header className="bg-chrome border-b border-hair">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-5">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">{tournament.name}</h1>
-            <div className="flex gap-2">
-              <button
-                onClick={handleExportJson}
-                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-              >
-                Exporteer JSON
-              </button>
-              <button
-                onClick={handleExportCsv}
-                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-              >
-                Exporteer CSV
-              </button>
-              <button
-                onClick={handleImport}
-                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-              >
-                Importeer
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="hidden"
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-ink">
+              <img
+                src="/rat.svg"
+                alt="Gewest Sante Me Ratje"
+                className="h-9 w-9 object-contain"
               />
             </div>
+            <h1 className="display text-2xl text-ink">{tournament.name}</h1>
           </div>
-          <button
-            onClick={() => setShowResetModal(true)}
-            className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-          >
-            Reset toernooi
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportJson}
+              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+            >
+              Exporteer JSON
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+            >
+              Exporteer CSV
+            </button>
+            <button
+              onClick={handleImport}
+              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+            >
+              Importeer
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="rounded-lg border border-brand/25 bg-transparent px-4 py-2 text-sm font-semibold text-brand hover:border-brand hover:bg-brand/5"
+            >
+              Reset toernooi
+            </button>
+          </div>
         </div>
-        <nav className="mx-auto max-w-7xl px-4">
-          <div className="flex gap-1">
+        <nav className="bg-chrome">
+          <div className="mx-auto flex max-w-7xl gap-1 px-6">
             {NAV_ITEMS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `rounded-t px-4 py-2 text-sm font-medium transition-colors ${
+                  `-mb-px border-b-[3px] px-4 py-3.5 font-display text-sm font-bold uppercase tracking-widest transition-colors ${
                     isActive
-                      ? "bg-white text-gray-900"
-                      : "bg-transparent text-gray-300 hover:text-white"
+                      ? "border-brand text-ink"
+                      : "border-transparent text-ink-soft hover:text-ink"
                   }`
                 }
               >
@@ -140,41 +147,43 @@ export default function Layout() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-6 py-8">
         <Outlet />
       </main>
       {showResetModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40"
           onClick={closeResetModal}
         >
           <div
-            className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+            className="relative w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={closeResetModal}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+              aria-label="Sluiten"
+              className="absolute right-4 top-4 text-ink-muted hover:text-ink"
             >
               ✕
             </button>
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+            <h3 className="mb-2 text-lg font-bold text-ink">
               Toernooi resetten?
             </h3>
-            <p className="mb-6 text-sm text-gray-500">
+            <p className="mb-6 text-sm text-ink-soft">
               Weet je zeker dat je alle data wilt wissen? Dit kan niet ongedaan
               worden gemaakt.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleExportAndClose}
-                className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600"
+                className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
               >
                 Exporteer eerst
               </button>
               <button
                 onClick={handleReset}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90"
               >
                 Wis alles
               </button>

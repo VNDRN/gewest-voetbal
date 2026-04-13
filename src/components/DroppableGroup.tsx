@@ -19,17 +19,19 @@ export default function DroppableGroup({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border-2 p-4 transition-colors ${
+      className={`rounded-2xl border-2 p-5 transition-colors ${
         isOver
-          ? "border-green-500 bg-green-50 ring-2 ring-green-200"
+          ? "border-ink bg-surface"
           : hasDraggingTeam
-            ? "border-dashed border-red-300 bg-white"
-            : "border-gray-200 bg-white"
+            ? "border-dashed border-hair bg-card"
+            : "border-card-hair bg-card"
       }`}
     >
-      <h4 className="mb-2 text-sm font-semibold">
+      <h4 className="display mb-3 text-lg text-ink">
         {name}{" "}
-        <span className="font-normal text-gray-400">({teamIds.length} teams)</span>
+        <span className="ml-1 text-xs font-semibold tracking-wider text-ink-muted">
+          ({teamIds.length} teams)
+        </span>
       </h4>
       <div className="flex flex-wrap gap-2">
         {teamIds.map((teamId) => (

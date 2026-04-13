@@ -35,7 +35,7 @@ export default function KnockoutPage() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-lg bg-gray-200 p-1">
+      <div className="inline-flex rounded-xl bg-surface p-1">
         {([
           { id: "all", label: "Alles" },
           { id: "mens", label: "Heren" },
@@ -44,10 +44,10 @@ export default function KnockoutPage() {
           <button
             key={id}
             onClick={() => setActiveComp(id)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
               activeComp === id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-card text-ink shadow-sm"
+                : "text-ink-soft hover:text-ink"
             }`}
           >
             {label}
@@ -86,23 +86,19 @@ export default function KnockoutPage() {
         return (
           <div key={comp.id} className="space-y-4">
             {activeComp === "all" && (
-              <h3 className="text-lg font-semibold">{comp.name}</h3>
+              <h3 className="display text-2xl text-ink">{comp.name}</h3>
             )}
 
             {champion && (
-              <div className="rounded-xl border-2 border-yellow-400 bg-yellow-50 p-6 text-center">
+              <div className="rounded-2xl border border-beige bg-beige/20 p-6 text-center">
                 <div className="text-4xl">🏆</div>
-                <div className="mt-2 text-2xl font-bold text-yellow-800">
-                  {champion}
-                </div>
-                <div className="text-sm text-yellow-600">
-                  {comp.name} Kampioen
-                </div>
+                <div className="display mt-2 text-3xl text-ink">{champion}</div>
+                <div className="eyebrow mt-1">{comp.name} Kampioen</div>
               </div>
             )}
 
             {rounds.length > 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="rounded-2xl border border-card-hair bg-card p-4">
                 <BracketView
                   rounds={rounds}
                   teamNames={teamNames}
@@ -119,7 +115,7 @@ export default function KnockoutPage() {
                 />
               </div>
             ) : (
-              <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+              <div className="rounded-2xl border border-card-hair bg-card p-8 text-center text-ink-soft">
                 Nog geen groepen. Genereer eerst de loting vanuit Instellingen.
               </div>
             )}

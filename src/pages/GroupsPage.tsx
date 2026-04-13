@@ -40,7 +40,7 @@ export default function GroupsPage() {
     return (
       <div className="space-y-4">
         <CompetitionToggle activeId={activeComp} onChange={setActiveComp} />
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+        <div className="rounded-2xl border border-card-hair bg-card p-8 text-center text-ink-soft">
           Nog geen groepen. Ga naar Instellingen om de loting te genereren.
         </div>
       </div>
@@ -57,9 +57,9 @@ export default function GroupsPage() {
           return (
             <div
               key={group.id}
-              className="rounded-xl border border-gray-200 bg-white p-4"
+              className="rounded-2xl border border-card-hair bg-card p-5"
             >
-              <h3 className="mb-3 text-base font-semibold">{group.name}</h3>
+              <h3 className="display mb-4 text-xl text-ink">{group.name}</h3>
               <StandingsTable
                 rows={standings}
                 advancingCount={competition.config.advancingPerGroup}
@@ -82,8 +82,8 @@ export default function GroupsPage() {
       </div>
 
       {bestNextPlacedRows.length > 0 && (
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-          <h3 className="mb-3 text-base font-semibold">
+        <div className="rounded-2xl border border-card-hair bg-card p-5">
+          <h3 className="mb-3 eyebrow">
             Beste volgende ({competition.config.bestNextPlacedCount} kwalificeren)
           </h3>
           <StandingsTable
@@ -95,12 +95,17 @@ export default function GroupsPage() {
         </div>
       )}
 
-      <div className="flex gap-2 text-xs text-gray-500">
-        <span className="inline-block h-3 w-3 rounded bg-green-100 border border-green-200" /> Doorgang
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-soft">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded bg-[var(--color-advancing-tint)] border border-card-hair" />
+          <span className="align-[1px] text-[10px] text-ink-muted">▲</span>
+          Doorgang
+        </span>
         {competition.config.bestNextPlacedCount > 0 && (
-          <>
-            <span className="ml-2 inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-200" /> Beste volgende kandidaat
-          </>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-3 w-3 rounded bg-[var(--color-advancing-tint)] border border-card-hair" />
+            Beste volgende kandidaat
+          </span>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -62,8 +62,9 @@ function DraggableCard({
     id,
     disabled: !canDrag,
   });
+  const cls = canDrag ? "cursor-grab [&_button]:cursor-grab" : "";
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners}>
+    <div ref={setNodeRef} className={cls} {...attributes} {...listeners}>
       {children}
     </div>
   );
@@ -322,6 +323,14 @@ export default function ScheduleGrid({
     () => (activeId ? allMatches.find((m) => m.id === activeId) ?? null : null),
     [activeId, allMatches]
   );
+
+  useEffect(() => {
+    if (!activeId) return;
+    document.body.classList.add("is-dragging");
+    return () => {
+      document.body.classList.remove("is-dragging");
+    };
+  }, [activeId]);
 
   function handleDragStart(event: DragStartEvent) {
     const id = event.active.id as string;

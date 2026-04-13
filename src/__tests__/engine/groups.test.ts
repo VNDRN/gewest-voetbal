@@ -114,7 +114,7 @@ describe("getGroupOptions", () => {
 
   describe("invariants", () => {
     it("all sizes in every option are between 3 and 5", () => {
-      for (let n = 6; n <= 24; n++) {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         for (const opt of options) {
           for (const size of opt.sizes) {
@@ -125,18 +125,18 @@ describe("getGroupOptions", () => {
       }
     });
 
-    it("every option has at least 2 groups", () => {
-      for (let n = 6; n <= 24; n++) {
+    it("every option has at least 1 group", () => {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         for (const opt of options) {
-          expect(opt.groupCount).toBeGreaterThanOrEqual(2);
+          expect(opt.groupCount).toBeGreaterThanOrEqual(1);
           expect(opt.sizes.length).toBe(opt.groupCount);
         }
       }
     });
 
     it("sizes always sum to the input team count", () => {
-      for (let n = 6; n <= 24; n++) {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         for (const opt of options) {
           const sum = opt.sizes.reduce((a, b) => a + b, 0);
@@ -146,7 +146,7 @@ describe("getGroupOptions", () => {
     });
 
     it("has no duplicate options in results", () => {
-      for (let n = 6; n <= 24; n++) {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         const labels = options.map((o) => o.label);
         const uniqueLabels = new Set(labels);
@@ -159,7 +159,7 @@ describe("getGroupOptions", () => {
     });
 
     it("sizes within an option are sorted descending", () => {
-      for (let n = 6; n <= 24; n++) {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         for (const opt of options) {
           for (let i = 0; i < opt.sizes.length - 1; i++) {
@@ -169,15 +169,15 @@ describe("getGroupOptions", () => {
       }
     });
 
-    it("every team count from 6-24 has at least one valid option", () => {
-      for (let n = 6; n <= 24; n++) {
+    it("every team count from 4-24 has at least one valid option", () => {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         expect(options.length).toBeGreaterThanOrEqual(1);
       }
     });
 
     it("label is a human-readable string", () => {
-      for (let n = 6; n <= 24; n++) {
+      for (let n = 4; n <= 24; n++) {
         const options = getGroupOptions(n);
         for (const opt of options) {
           expect(typeof opt.label).toBe("string");

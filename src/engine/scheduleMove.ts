@@ -22,6 +22,58 @@ export type InsertChange = {
 
 export type Change = MoveChange | SwapChange | InsertChange;
 
+export type ValidationReason =
+  | "played"
+  | "team-conflict"
+  | "round-order"
+  | "structural";
+
+export type ValidationResult =
+  | { ok: true; next: ScheduledMatch[] }
+  | { ok: false; reason: ValidationReason };
+
+function movedMatchIds(change: Change): string[] {
+  if (change.kind === "swap") return [change.matchAId, change.matchBId];
+  return [change.matchId];
+}
+
+function anyPlayed(matches: ScheduledMatch[], ids: string[]): boolean {
+  return ids.some(
+    (id) => matches.find((m) => m.id === id)?.score != null
+  );
+}
+
+function hasTeamConflict(matches: ScheduledMatch[]): boolean {
+  const bySlot = new Map<number, Set<string>>();
+  for (const m of matches) {
+    let seen = bySlot.get(m.timeSlot);
+    if (!seen) {
+      seen = new Set();
+      bySlot.set(m.timeSlot, seen);
+    }
+    for (const tid of [m.homeTeamId, m.awayTeamId]) {
+      if (tid == null) continue;
+      if (seen.has(tid)) return true;
+      seen.add(tid);
+    }
+  }
+  return false;
+}
+
+export function validateChange(
+  matches: ScheduledMatch[],
+  change: Change
+): ValidationResult {
+  if (anyPlayed(matches, movedMatchIds(change))) {
+    return { ok: false, reason: "played" };
+  }
+  const next = applyChange(matches, change);
+  if (hasTeamConflict(next)) {
+    return { ok: false, reason: "team-conflict" };
+  }
+  return { ok: true, next };
+}
+
 export function applyChange(
   matches: ScheduledMatch[],
   change: Change

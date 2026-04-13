@@ -775,23 +775,23 @@ describe("scheduleMatches", () => {
       }
     });
 
-    it("parametric: no group/field combo produces a non-monotonic match-count profile", () => {
-      const configs = [
-        { teams: 4, fields: 2 },
-        { teams: 4, fields: 4 },
-        { teams: 5, fields: 2 },
-        { teams: 5, fields: 3 },
-        { teams: 6, fields: 3 },
-        { teams: 6, fields: 4 },
-      ];
-      for (const { teams, fields } of configs) {
+    const monotonicConfigs = [
+      { teams: 4, fields: 2 },
+      { teams: 4, fields: 4 },
+      { teams: 5, fields: 2 },
+      { teams: 5, fields: 3 },
+      { teams: 6, fields: 3 },
+      { teams: 6, fields: 4 },
+    ];
+    for (const { teams, fields } of monotonicConfigs) {
+      it(`${teams} teams, ${fields} fields: match counts are non-increasing across slots`, () => {
         const ids = Array.from({ length: teams }, (_, i) => `t${i}`);
         const result = scheduleMatches(roundRobin(ids, "g"), fields);
         const counts = slotMatchCounts(result);
         for (let i = 1; i < counts.length; i++) {
           expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
         }
-      }
-    });
+      });
+    }
   });
 });

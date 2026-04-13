@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTournament, useTournamentDispatch } from "../context/TournamentContext";
 import {
   exportToJson,
@@ -9,6 +9,8 @@ import {
 } from "../persistence/exportImport";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { clearState } from "../persistence/localStorage";
+import HelpButton from "./HelpButton";
+import { helpContent, isHelpRoute } from "../content/helpContent";
 
 const NAV_ITEMS = [
   { to: "/setup", label: "Instellingen" },
@@ -23,6 +25,10 @@ export default function Layout() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const [showResetModal, setShowResetModal] = useState(false);
+  const location = useLocation();
+  const helpEntry = isHelpRoute(location.pathname)
+    ? helpContent[location.pathname]
+    : undefined;
 
   function handleExportJson() {
     const json = exportToJson(tournament);
@@ -128,7 +134,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="bg-chrome">
-          <div className="mx-auto flex max-w-7xl gap-1 px-6">
+          <div className="mx-auto flex max-w-7xl items-center gap-1 px-6">
             {NAV_ITEMS.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -144,6 +150,7 @@ export default function Layout() {
                 {label}
               </NavLink>
             ))}
+            {helpEntry && <HelpButton entry={helpEntry} />}
           </div>
         </nav>
       </header>

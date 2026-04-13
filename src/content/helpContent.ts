@@ -1,3 +1,6 @@
+export const HELP_ROUTES = ["/setup", "/groups", "/schedule", "/knockouts"] as const;
+export type HelpRoute = (typeof HELP_ROUTES)[number];
+
 export type HelpOption = {
   label: string;
   description: string;
@@ -10,7 +13,7 @@ export type HelpEntry = {
   next: string;
 };
 
-export const helpContent: Record<string, HelpEntry> = {
+export const helpContent: Record<HelpRoute, HelpEntry> = {
   "/setup": {
     title: "Instellingen",
     intro: "Start hier. Stel je toernooi in, voeg teams toe en loot de groepen.",
@@ -126,3 +129,7 @@ export const helpContent: Record<string, HelpEntry> = {
     next: "Toernooi afgerond — exporteer de uitslag via de knop bovenaan.",
   },
 };
+
+export function isHelpRoute(path: string): path is HelpRoute {
+  return (HELP_ROUTES as readonly string[]).includes(path);
+}

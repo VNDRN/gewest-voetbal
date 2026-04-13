@@ -10,7 +10,7 @@ import {
 import { useRef, useState, useCallback, useEffect } from "react";
 import { clearState } from "../persistence/localStorage";
 import HelpButton from "./HelpButton";
-import { helpContent } from "../content/helpContent";
+import { helpContent, isHelpRoute } from "../content/helpContent";
 
 const NAV_ITEMS = [
   { to: "/setup", label: "Instellingen" },
@@ -26,7 +26,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const [showResetModal, setShowResetModal] = useState(false);
   const location = useLocation();
-  const helpEntry = helpContent[location.pathname];
+  const helpEntry = isHelpRoute(location.pathname)
+    ? helpContent[location.pathname]
+    : undefined;
 
   function handleExportJson() {
     const json = exportToJson(tournament);

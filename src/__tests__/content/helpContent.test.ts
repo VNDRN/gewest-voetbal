@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { helpContent } from "../../content/helpContent";
-
-const ROUTES = ["/setup", "/groups", "/schedule", "/knockouts"] as const;
+import { HELP_ROUTES, helpContent } from "../../content/helpContent";
 
 describe("helpContent", () => {
-  for (const route of ROUTES) {
+  for (const route of HELP_ROUTES) {
     it(`has a non-empty entry for ${route}`, () => {
       const entry = helpContent[route];
       expect(entry).toBeDefined();

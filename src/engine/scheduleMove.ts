@@ -1,5 +1,80 @@
 import type { ScheduledMatch } from "../components/ScheduleGrid";
 
+export type KnockoutRoundInfo = {
+  competitionId: string;
+  name: string;
+  matchIds: string[];
+  isThirdPlace: boolean;
+};
+
+export type ValidationContext = {
+  rounds: KnockoutRoundInfo[];
+};
+
+function tierOf(
+  matchId: string,
+  rounds: KnockoutRoundInfo[]
+): { competitionId: string; tier: number; isThirdPlace: boolean } | null {
+  for (let ri = 0; ri < rounds.length; ri++) {
+    const r = rounds[ri];
+    if (!r.matchIds.includes(matchId)) continue;
+    if (r.isThirdPlace) {
+      // sibling tier of the highest non-isThirdPlace round in the same competition
+      let finalTier = -1;
+      let tierCounter = 0;
+      for (const rr of rounds) {
+        if (rr.competitionId !== r.competitionId) continue;
+        if (rr.isThirdPlace) continue;
+        finalTier = tierCounter;
+        tierCounter++;
+      }
+      return { competitionId: r.competitionId, tier: finalTier, isThirdPlace: true };
+    }
+    let tierCounter = 0;
+    for (let j = 0; j < ri; j++) {
+      if (rounds[j].competitionId !== r.competitionId) continue;
+      if (rounds[j].isThirdPlace) continue;
+      tierCounter++;
+    }
+    return { competitionId: r.competitionId, tier: tierCounter, isThirdPlace: false };
+  }
+  return null;
+}
+
+function hasRoundOrderViolation(
+  matches: ScheduledMatch[],
+  rounds: KnockoutRoundInfo[]
+): boolean {
+  const tiered: {
+    m: ScheduledMatch;
+    competitionId: string;
+    tier: number;
+    isThirdPlace: boolean;
+  }[] = [];
+  for (const match of matches) {
+    if (match.phase !== "knockout") continue;
+    const t = tierOf(match.id, rounds);
+    if (!t) continue;
+    tiered.push({ m: match, ...t });
+  }
+  for (const a of tiered) {
+    for (const b of tiered) {
+      if (a.competitionId !== b.competitionId) continue;
+      // earlier tier must have strictly earlier slot
+      if (a.tier < b.tier && a.m.timeSlot >= b.m.timeSlot) return true;
+      // third-place is a sibling of the final — cannot go AFTER it
+      if (
+        a.tier === b.tier &&
+        a.isThirdPlace &&
+        !b.isThirdPlace &&
+        a.m.timeSlot > b.m.timeSlot
+      )
+        return true;
+    }
+  }
+  return false;
+}
+
 export type MoveChange = {
   kind: "move";
   matchId: string;
@@ -62,7 +137,8 @@ function hasTeamConflict(matches: ScheduledMatch[]): boolean {
 
 export function validateChange(
   matches: ScheduledMatch[],
-  change: Change
+  change: Change,
+  context: ValidationContext = { rounds: [] }
 ): ValidationResult {
   if (anyPlayed(matches, movedMatchIds(change))) {
     return { ok: false, reason: "played" };
@@ -70,6 +146,9 @@ export function validateChange(
   const next = applyChange(matches, change);
   if (hasTeamConflict(next)) {
     return { ok: false, reason: "team-conflict" };
+  }
+  if (hasRoundOrderViolation(next, context.rounds)) {
+    return { ok: false, reason: "round-order" };
   }
   return { ok: true, next };
 }

@@ -167,3 +167,88 @@ describe("validateChange — unplayed guard", () => {
     if (!res.ok) expect(res.reason).toBe("played");
   });
 });
+
+describe("validateChange — knockout tier ordering", () => {
+  function ko(
+    id: string,
+    roundIndex: number,
+    timeSlot: number,
+    fieldIndex: number,
+    isThirdPlace = false
+  ): ScheduledMatch {
+    return m({
+      id,
+      phase: "knockout",
+      timeSlot,
+      fieldIndex,
+      competitionId: "mens",
+      groupName: isThirdPlace ? "3e plaats" : `Ronde ${roundIndex}`,
+      homeTeamId: null as unknown as string,
+      awayTeamId: null as unknown as string,
+    });
+  }
+
+  it("rejects moving a QF match to the same slot as an SF match", () => {
+    const matches = [
+      ko("qf1", 0, 0, 0),
+      ko("qf2", 0, 0, 1),
+      ko("sf1", 1, 2, 0),
+      ko("sf2", 1, 2, 1),
+    ];
+    const res = validateChange(matches, {
+      kind: "move",
+      matchId: "qf1",
+      toSlot: 2,
+      toField: 2,
+    }, {
+      rounds: [
+        { name: "Ronde 0", matchIds: ["qf1", "qf2"], isThirdPlace: false, competitionId: "mens" },
+        { name: "Ronde 1", matchIds: ["sf1", "sf2"], isThirdPlace: false, competitionId: "mens" },
+      ],
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("round-order");
+  });
+
+  it("accepts a third-place match sharing a slot with the final (siblings)", () => {
+    const matches = [
+      ko("sf1", 1, 2, 0),
+      ko("sf2", 1, 2, 1),
+      ko("f1", 2, 4, 0),
+      ko("tp1", 3, 4, 1, true),
+    ];
+    const res = validateChange(matches, {
+      kind: "move",
+      matchId: "tp1",
+      toSlot: 4,
+      toField: 1,
+    }, {
+      rounds: [
+        { name: "SF", matchIds: ["sf1", "sf2"], isThirdPlace: false, competitionId: "mens" },
+        { name: "Finale", matchIds: ["f1"], isThirdPlace: false, competitionId: "mens" },
+        { name: "3e plaats", matchIds: ["tp1"], isThirdPlace: true, competitionId: "mens" },
+      ],
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects a third-place match landing after the final", () => {
+    const matches = [
+      ko("f1", 2, 4, 0),
+      ko("tp1", 3, 5, 0, true),
+    ];
+    const res = validateChange(matches, {
+      kind: "move",
+      matchId: "tp1",
+      toSlot: 5,
+      toField: 0,
+    }, {
+      rounds: [
+        { name: "Finale", matchIds: ["f1"], isThirdPlace: false, competitionId: "mens" },
+        { name: "3e plaats", matchIds: ["tp1"], isThirdPlace: true, competitionId: "mens" },
+      ],
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("round-order");
+  });
+});

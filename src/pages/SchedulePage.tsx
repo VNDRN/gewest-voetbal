@@ -4,7 +4,7 @@ import {
   useTournamentDispatch,
 } from "../context/TournamentContext";
 import ScheduleGrid from "../components/ScheduleGrid";
-import type { ScheduledMatch } from "../components/ScheduleGrid";
+import type { ScheduledMatch } from "../types";
 import type { Change, KnockoutRoundInfo } from "../engine/scheduleMove";
 import ScoreInput from "../components/ScoreInput";
 import { calculateStandings, rankBestNextPlaced } from "../engine/standings";

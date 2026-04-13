@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyChange, validateChange, classifyTargets } from "../../engine/scheduleMove";
-import type { ScheduledMatch } from "../../components/ScheduleGrid";
-import type { ScheduleBreak } from "../../types";
+import type { ScheduleBreak, ScheduledMatch } from "../../types";
 
 function m(partial: Partial<ScheduledMatch> = {}): ScheduledMatch {
   return {
@@ -330,5 +329,24 @@ describe("classifyTargets", () => {
     expect(map.has("insert-0-0")).toBe(true); // above row 0
     expect(map.has("insert-1-0")).toBe(true); // between slots 0 and 1 (also bracketing break)
     expect(map.has("insert-2-0")).toBe(true); // below slot 1
+    // Above-break strip gets its own distinct droppable id so dnd-kit can detect
+    // both sides of the break without colliding.
+    expect(map.has("insert-pre-1-0")).toBe(true);
+    expect(map.get("insert-pre-1-0")).toBe(map.get("insert-1-0"));
+  });
+});
+
+describe("changeFromDragEnd — insert-pre id", () => {
+  it("derives the same Change from insert-pre as from insert", () => {
+    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
+    const c1 = changeFromDragEnd("a", "insert-1-0", matches);
+    const c2 = changeFromDragEnd("a", "insert-pre-1-0", matches);
+    expect(c1).toEqual(c2);
+    expect(c2).toEqual({
+      kind: "insert",
+      matchId: "a",
+      atSlot: 1,
+      toField: 0,
+    });
   });
 });

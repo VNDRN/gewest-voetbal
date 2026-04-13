@@ -17,21 +17,7 @@ import {
   type TargetClass,
 } from "../engine/scheduleMove";
 import { formatTime } from "../engine/time";
-import type { ScheduleBreak } from "../types";
-
-type ScheduledMatch = {
-  id: string;
-  homeTeamId: string | null;
-  awayTeamId: string | null;
-  fieldIndex: number;
-  timeSlot: number;
-  score: { home: number; away: number } | null;
-  phase: "group" | "knockout";
-  competitionId: string;
-  groupName: string;
-  homeSourceDescription?: string;
-  awaySourceDescription?: string;
-};
+import type { ScheduleBreak, ScheduledMatch } from "../types";
 
 export type MatchPillVariant = "heren" | "dames";
 
@@ -106,12 +92,14 @@ function InsertStrip({
   targetMap,
   overId,
   active,
+  idPrefix = "insert",
 }: {
   atSlot: number;
   fieldCount: number;
   targetMap: Map<string, TargetClass>;
   overId: string | null;
   active: boolean;
+  idPrefix?: "insert" | "insert-pre";
 }) {
   if (!active) return null;
   const fields = Array.from({ length: fieldCount }, (_, f) => f);
@@ -123,7 +111,7 @@ function InsertStrip({
         </span>
       </td>
       {fields.map((f) => {
-        const id = `insert-${atSlot}-${f}`;
+        const id = `${idPrefix}-${atSlot}-${f}`;
         const cls = targetMap.get(id);
         const isInvalid = cls === "invalid";
         const isValid = cls === "valid-insert";
@@ -587,6 +575,7 @@ export default function ScheduleGrid({
                         targetMap={targetMap}
                         overId={overId}
                         active={!!activeId}
+                        idPrefix="insert-pre"
                       />
                       <tr>
                         <td
@@ -681,4 +670,3 @@ export default function ScheduleGrid({
   );
 }
 
-export type { ScheduledMatch };

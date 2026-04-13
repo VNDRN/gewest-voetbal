@@ -1,5 +1,4 @@
-import type { ScheduledMatch } from "../components/ScheduleGrid";
-import type { ScheduleBreak } from "../types";
+import type { ScheduleBreak, ScheduledMatch } from "../types";
 
 export type KnockoutRoundInfo = {
   competitionId: string;
@@ -204,18 +203,26 @@ export function classifyTargets(
   for (let slot = 0; slot <= maxSlot + 1; slot++) {
     insertPositions.add(slot);
   }
+  const breakSlots = new Set<number>();
   for (const b of breaks) {
-    insertPositions.add(b.afterTimeSlot + 1);
+    const atSlot = b.afterTimeSlot + 1;
+    insertPositions.add(atSlot);
+    breakSlots.add(atSlot);
   }
   for (const atSlot of insertPositions) {
     for (let field = 0; field < fieldCount; field++) {
-      const id = `insert-${atSlot}-${field}`;
       const res = validateChange(
         matches,
         { kind: "insert", matchId: activeMatchId, atSlot, toField: field },
         context
       );
-      map.set(id, res.ok ? "valid-insert" : "invalid");
+      const cls: TargetClass = res.ok ? "valid-insert" : "invalid";
+      map.set(`insert-${atSlot}-${field}`, cls);
+      // Above-break strip shares the same atSlot but uses a distinct droppable id
+      // so dnd-kit can detect the pre-break zone independently.
+      if (breakSlots.has(atSlot)) {
+        map.set(`insert-pre-${atSlot}-${field}`, cls);
+      }
     }
   }
 
@@ -245,11 +252,14 @@ export function changeFromDragEnd(
     }
     return { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id };
   }
-  if (overId.startsWith("insert-")) {
-    const parts = overId.split("-");
-    if (parts.length !== 3) return null;
-    const atSlot = Number(parts[1]);
-    const field = Number(parts[2]);
+  if (overId.startsWith("insert-pre-") || overId.startsWith("insert-")) {
+    const stripped = overId.startsWith("insert-pre-")
+      ? overId.slice("insert-pre-".length)
+      : overId.slice("insert-".length);
+    const parts = stripped.split("-");
+    if (parts.length !== 2) return null;
+    const atSlot = Number(parts[0]);
+    const field = Number(parts[1]);
     if (!Number.isFinite(atSlot) || !Number.isFinite(field)) return null;
     return { kind: "insert", matchId: activeMatchId, atSlot, toField: field };
   }

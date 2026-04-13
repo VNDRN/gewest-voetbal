@@ -174,6 +174,95 @@ function InsertSlot({
   );
 }
 
+function ActionChip({ kind }: { kind: "move" | "swap" | "insert" | "reject" }) {
+  const bg = kind === "reject" ? "bg-brand" : "bg-ink";
+  return (
+    <div
+      className={`absolute -top-3 -right-3 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-card ${bg}`}
+      style={{ transform: "rotate(2.5deg)" }}
+    >
+      {kind === "move" && (
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+          <path fill="currentColor" d="M10 2 L14 2 L14 10 L17.5 10 L12 16 L6.5 10 L10 10 Z" />
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 13 V19 A2 2 0 0 0 6 21 H18 A2 2 0 0 0 20 19 V13"
+          />
+        </svg>
+      )}
+      {kind === "swap" && (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M7 7h11M14 3l4 4-4 4" />
+          <path d="M17 17H6M10 21l-4-4 4-4" />
+        </svg>
+      )}
+      {kind === "insert" && (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      )}
+      {kind === "reject" && (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function OverlayCard({
+  match,
+  teamNames,
+  chip,
+}: {
+  match: ScheduledMatch;
+  teamNames: Map<string, string>;
+  chip: "move" | "swap" | "insert" | "reject" | null;
+}) {
+  const meta = scheduledMatchMeta(match);
+  const pillClass =
+    meta.pillVariant === "dames"
+      ? "bg-brand/8 text-brand"
+      : "bg-ink/15 text-ink";
+  const homeName = match.homeTeamId
+    ? (teamNames.get(match.homeTeamId) ?? "?")
+    : (match.homeSourceDescription ?? "TBD");
+  const awayName = match.awayTeamId
+    ? (teamNames.get(match.awayTeamId) ?? "?")
+    : (match.awaySourceDescription ?? "TBD");
+  return (
+    <div
+      className="relative w-[280px] rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
+      style={{ transform: "rotate(-2.5deg)" }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}>
+          {meta.pillLabel}
+        </span>
+        <span className="text-[11px] font-medium text-ink-muted">
+          {meta.rightEyebrow}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <span className="truncate text-right text-[16px] font-semibold text-ink">
+          {homeName}
+        </span>
+        <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
+          VS
+        </span>
+        <span className="truncate text-left text-[16px] font-semibold text-ink">
+          {awayName}
+        </span>
+      </div>
+      {chip && <ActionChip kind={chip} />}
+    </div>
+  );
+}
+
 function cellStateClass(cls: TargetClass | undefined): string {
   switch (cls) {
     case "valid-move":
@@ -278,8 +367,18 @@ export default function ScheduleGrid({
     setOverId(null);
   }
 
-  // suppress unused warning — activeMatch reserved for Task 12 overlay
-  void activeMatch;
+  function chipFor(
+    ovId: string | null,
+    map: Map<string, TargetClass>
+  ): "move" | "swap" | "insert" | "reject" | null {
+    if (!ovId) return null;
+    const cls = map.get(ovId);
+    if (cls === "invalid") return "reject";
+    if (cls === "valid-move") return "move";
+    if (cls === "valid-swap") return "swap";
+    if (cls === "valid-insert") return "insert";
+    return null;
+  }
 
   return (
     <DndContext
@@ -547,7 +646,13 @@ export default function ScheduleGrid({
         </table>
       </div>
       <DragOverlay>
-        {/* empty for now — filled by Task 12 */}
+        {activeMatch && (
+          <OverlayCard
+            match={activeMatch}
+            teamNames={teamNames}
+            chip={chipFor(overId, targetMap)}
+          />
+        )}
       </DragOverlay>
     </DndContext>
   );

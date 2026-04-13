@@ -167,7 +167,7 @@ export default function ScheduleGrid({
                         </div>
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                           <span
-                            className={`truncate text-right text-[14px] ${
+                            className={`truncate text-right text-[16px] ${
                               homeIsTbd
                                 ? "italic font-medium text-ink-muted"
                                 : "font-semibold text-ink"
@@ -189,7 +189,7 @@ export default function ScheduleGrid({
                             </span>
                           )}
                           <span
-                            className={`truncate text-left text-[14px] ${
+                            className={`truncate text-left text-[16px] ${
                               awayIsTbd
                                 ? "italic font-medium text-ink-muted"
                                 : "font-semibold text-ink"

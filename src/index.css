@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+@theme {
+  /* Chiro brand (huisstijlgids p.18) */
+  --color-brand: #E1143C;
+  --color-ink: #00124D;
+  --color-beige: #E4D096;
+
+  /* Surfaces */
+  --color-surface: #FAF7EE;
+  --color-card: #FFFFFF;
+  --color-chrome: #FFFFFF;
+
+  /* Ink gradient */
+  --color-ink-soft: #475785;
+  --color-ink-muted: #8A94B3;
+
+  /* Borders */
+  --color-hair: #E6E1D2;
+  --color-card-hair: #ECE6D7;
+
+  /* Semantic aliases */
+  --color-destructive: #E1143C;
+  --color-advancing-tint: rgba(0, 18, 77, 0.05);
+
+  /* Team dot palette (setup-screen identity dots) */
+  --color-team-red: #E1143C;
+  --color-team-navy: #00124D;
+  --color-team-orange: #F07A2E;
+  --color-team-purple: #7C3F9E;
+  --color-team-green: #009640;
+  --color-team-teal: #2A9BA8;
+
+  /* Fonts */
+  --font-sans: 'Source Sans 3', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Source Sans 3', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.eyebrow-muted {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}

@@ -129,10 +129,7 @@ export default function ScheduleGrid({
                         />
                       );
                     }
-                    const isWomens = match.competitionId === "womens";
-                    const badgeClass = isWomens
-                      ? "bg-brand/10 text-brand"
-                      : "bg-ink/10 text-ink";
+                    const meta = scheduledMatchMeta(match);
                     const isKnockout = match.phase === "knockout";
                     const homeName = match.homeTeamId
                       ? (teamNames.get(match.homeTeamId) ?? "?")
@@ -140,55 +137,87 @@ export default function ScheduleGrid({
                     const awayName = match.awayTeamId
                       ? (teamNames.get(match.awayTeamId) ?? "?")
                       : (match.awaySourceDescription ?? "TBD");
+                    const homeIsTbd = !match.homeTeamId;
+                    const awayIsTbd = !match.awayTeamId;
+                    const isTbdKnockout =
+                      isKnockout && (homeIsTbd || awayIsTbd);
+
+                    const pillClass =
+                      meta.pillVariant === "dames"
+                        ? "bg-brand/10 text-brand"
+                        : "bg-ink/10 text-ink";
+
+                    const cardClass = `flex w-full flex-col gap-4 rounded-lg border bg-card p-3 text-left transition-colors ${
+                      isTbdKnockout
+                        ? "border-dashed border-card-hair"
+                        : "border-card-hair"
+                    }`;
 
                     const inner = (
                       <>
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center justify-between gap-2">
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeClass}`}
+                            className={`rounded px-1.5 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}
                           >
-                            {isWomens ? "W" : "M"}
+                            {meta.pillLabel}
                           </span>
-                          <span className="text-[10px] text-ink-muted">
-                            {match.groupName}
+                          <span className="text-[10px] font-semibold text-ink-muted">
+                            {meta.rightEyebrow}
                           </span>
                         </div>
-                        <div className="mt-1 text-xs">
-                          <span className={isKnockout && !match.homeTeamId ? "italic text-ink-muted" : "font-medium"}>
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                          <span
+                            className={`truncate text-right text-[13px] ${
+                              homeIsTbd
+                                ? "italic font-medium text-ink-muted"
+                                : "font-semibold text-ink"
+                            }`}
+                          >
                             {homeName}
                           </span>
-                          <span className="mx-1 text-ink-muted">
-                            {match.score
-                              ? `${match.score.home}-${match.score.away}`
-                              : "vs"}
-                          </span>
-                          <span className={isKnockout && !match.awayTeamId ? "italic text-ink-muted" : "font-medium"}>
+                          {match.score ? (
+                            <span className="font-display text-[20px] font-black leading-none text-ink tabular-nums whitespace-nowrap">
+                              <span>{match.score.home}</span>
+                              <span className="mx-[3px] font-medium text-ink-muted">
+                                –
+                              </span>
+                              <span>{match.score.away}</span>
+                            </span>
+                          ) : (
+                            <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
+                              VS
+                            </span>
+                          )}
+                          <span
+                            className={`truncate text-left text-[13px] ${
+                              awayIsTbd
+                                ? "italic font-medium text-ink-muted"
+                                : "font-semibold text-ink"
+                            }`}
+                          >
                             {awayName}
                           </span>
                         </div>
                       </>
                     );
 
-                    const canClick = !isKnockout || (match.homeTeamId && match.awayTeamId);
+                    const canClick =
+                      !isKnockout || (match.homeTeamId && match.awayTeamId);
 
                     return (
                       <td
                         key={field}
-                        className="border border-card-hair px-2 py-1.5"
+                        className="border border-card-hair p-1"
                       >
                         {canClick ? (
                           <button
                             onClick={() => onMatchClick(match)}
-                            className={`w-full rounded-lg p-1.5 text-left transition-colors hover:bg-surface ${
-                              isKnockout ? "border border-dashed border-card-hair" : ""
-                            }`}
+                            className={`${cardClass} hover:bg-surface`}
                           >
                             {inner}
                           </button>
                         ) : (
-                          <div className="rounded-lg border border-dashed border-card-hair p-1.5">
-                            {inner}
-                          </div>
+                          <div className={cardClass}>{inner}</div>
                         )}
                       </td>
                     );

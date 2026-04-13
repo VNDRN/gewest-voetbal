@@ -99,6 +99,81 @@ function DroppableCell({
   );
 }
 
+function InsertStrip({
+  atSlot,
+  fieldCount,
+  targetMap,
+  overId,
+  active,
+}: {
+  atSlot: number;
+  fieldCount: number;
+  targetMap: Map<string, TargetClass>;
+  overId: string | null;
+  active: boolean;
+}) {
+  if (!active) return null;
+  const fields = Array.from({ length: fieldCount }, (_, f) => f);
+  return (
+    <tr>
+      <td className="border-0 p-0 text-right pr-2">
+        <span className="font-display text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink/55">
+          + Tijdslot
+        </span>
+      </td>
+      {fields.map((f) => {
+        const id = `insert-${atSlot}-${f}`;
+        const cls = targetMap.get(id);
+        const isInvalid = cls === "invalid";
+        const isValid = cls === "valid-insert";
+        const isOver = overId === id;
+        const base = "border-0 p-1";
+        return (
+          <td key={f} className={base}>
+            <InsertSlot
+              id={id}
+              invalid={isInvalid}
+              valid={isValid}
+              hovered={isOver}
+            />
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+function InsertSlot({
+  id,
+  invalid,
+  valid,
+  hovered,
+}: {
+  id: string;
+  invalid: boolean;
+  valid: boolean;
+  hovered: boolean;
+}) {
+  const { setNodeRef } = useDroppable({ id });
+  let cls =
+    "rounded-md border-2 border-dashed transition-all ";
+  if (hovered && valid) {
+    cls += "h-20 bg-ink/10 border-ink flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink";
+  } else if (hovered && invalid) {
+    cls += "h-20 bg-brand/10 border-brand flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand";
+  } else if (invalid) {
+    cls += "h-5 bg-brand/5 border-brand/45";
+  } else {
+    cls += "h-5 bg-ink/5 border-ink/40";
+  }
+  return (
+    <div ref={setNodeRef} className={cls}>
+      {hovered && valid && "+ Nieuw tijdslot"}
+      {hovered && invalid && "× Niet toegestaan"}
+    </div>
+  );
+}
+
 function cellStateClass(cls: TargetClass | undefined): string {
   switch (cls) {
     case "valid-move":
@@ -203,8 +278,6 @@ export default function ScheduleGrid({
     setOverId(null);
   }
 
-  // suppress unused warning — overId reserved for Task 12 overlay
-  void overId;
   // suppress unused warning — activeMatch reserved for Task 12 overlay
   void activeMatch;
 
@@ -246,6 +319,15 @@ export default function ScheduleGrid({
 
               return (
                 <Fragment key={slot}>
+                  {slotIdx === 0 && (
+                    <InsertStrip
+                      atSlot={0}
+                      fieldCount={fieldCount}
+                      targetMap={targetMap}
+                      overId={overId}
+                      active={!!activeId}
+                    />
+                  )}
                   <tr>
                     <td className="border border-card-hair bg-surface px-3 py-2 text-xs font-semibold text-ink-soft tabular-nums whitespace-nowrap">
                       {formatTime(slot, startTime, slotDurationMinutes, breaks)}
@@ -375,63 +457,88 @@ export default function ScheduleGrid({
                       );
                     })}
                   </tr>
-                  {schedBreak && (
-                    <tr>
-                      <td
-                        colSpan={fieldCount + 1}
-                        className="border border-card-hair p-0"
-                      >
-                        <div className="flex items-center justify-between border-y-2 border-dashed border-beige bg-beige/20 px-4 py-2.5">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-base">☕</span>
-                            <span className="text-sm font-bold text-ink">
-                              Pauze
-                            </span>
-                            <span className="text-xs text-ink-soft">
-                              {breakStartTime} – {breakEndTime}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={1}
-                              value={schedBreak.durationMinutes}
-                              onChange={(e) =>
-                                onUpdateBreak(
-                                  schedBreak.id,
-                                  Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              className="w-14 rounded-md border border-beige bg-card px-1.5 py-0.5 text-center text-xs tabular-nums text-ink"
-                            />
-                            <span className="text-xs text-ink-soft">min</span>
-                            <button
-                              onClick={() => onRemoveBreak(schedBreak.id)}
-                              className="text-sm text-brand opacity-60 hover:opacity-100"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {slotIdx < slots.length - 1 && !schedBreak && (
-                    <tr className="group/add">
-                      <td
-                        colSpan={fieldCount + 1}
-                        className="border-0 p-0"
-                      >
-                        <button
-                          onClick={() => onAddBreak(slot)}
-                          className="flex h-6 w-full cursor-pointer items-center justify-center transition-colors hover:bg-surface"
+                  {schedBreak ? (
+                    <>
+                      <InsertStrip
+                        atSlot={slot + 1}
+                        fieldCount={fieldCount}
+                        targetMap={targetMap}
+                        overId={overId}
+                        active={!!activeId}
+                      />
+                      <tr>
+                        <td
+                          colSpan={fieldCount + 1}
+                          className="border border-card-hair p-0"
                         >
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full border border-card-hair bg-surface text-xs text-ink-muted opacity-0 shadow-sm transition-opacity group-hover/add:opacity-100">
-                            +
-                          </span>
-                        </button>
-                      </td>
-                    </tr>
+                          <div className="flex items-center justify-between border-y-2 border-dashed border-beige bg-beige/20 px-4 py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">☕</span>
+                              <span className="text-sm font-bold text-ink">
+                                Pauze
+                              </span>
+                              <span className="text-xs text-ink-soft">
+                                {breakStartTime} – {breakEndTime}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min={1}
+                                value={schedBreak.durationMinutes}
+                                onChange={(e) =>
+                                  onUpdateBreak(
+                                    schedBreak.id,
+                                    Math.max(1, Number(e.target.value))
+                                  )
+                                }
+                                className="w-14 rounded-md border border-beige bg-card px-1.5 py-0.5 text-center text-xs tabular-nums text-ink"
+                              />
+                              <span className="text-xs text-ink-soft">min</span>
+                              <button
+                                onClick={() => onRemoveBreak(schedBreak.id)}
+                                className="text-sm text-brand opacity-60 hover:opacity-100"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <InsertStrip
+                        atSlot={slot + 1}
+                        fieldCount={fieldCount}
+                        targetMap={targetMap}
+                        overId={overId}
+                        active={!!activeId}
+                      />
+                    </>
+                  ) : activeId ? (
+                    <InsertStrip
+                      atSlot={slot + 1}
+                      fieldCount={fieldCount}
+                      targetMap={targetMap}
+                      overId={overId}
+                      active
+                    />
+                  ) : (
+                    slotIdx < slots.length - 1 && (
+                      <tr className="group/add">
+                        <td
+                          colSpan={fieldCount + 1}
+                          className="border-0 p-0"
+                        >
+                          <button
+                            onClick={() => onAddBreak(slot)}
+                            className="flex h-6 w-full cursor-pointer items-center justify-center transition-colors hover:bg-surface"
+                          >
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-card-hair bg-surface text-xs text-ink-muted opacity-0 shadow-sm transition-opacity group-hover/add:opacity-100">
+                              +
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
                   )}
                 </Fragment>
               );

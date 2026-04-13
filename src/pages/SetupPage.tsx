@@ -11,7 +11,7 @@ import {
   getGroupOptions,
   generateRoundRobinMatches,
   calculateBracketFill,
-  maxAdvancingPerGroup,
+  getAdvancingOptions,
 } from "../engine/groups";
 import { scheduleMatches } from "../engine/scheduler";
 import { generateKnockoutRounds } from "../engine/knockout";
@@ -34,7 +34,6 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   const bracketFill = useMemo(
     () =>
       calculateBracketFill(groupCount, competition.config.advancingPerGroup),
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     [groupCount, competition.config.advancingPerGroup]
   );
 
@@ -54,9 +53,13 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
     dispatch({ type: "REMOVE_TEAM", competitionId: competition.id, teamId });
   }
 
-  const maxAdvancing = selectedOption
-    ? maxAdvancingPerGroup(selectedOption.sizes)
-    : 1;
+  const advancingOptions = useMemo(
+    () =>
+      selectedOption
+        ? getAdvancingOptions(groupCount, selectedOption.sizes)
+        : [],
+    [groupCount, selectedOption]
+  );
 
   useEffect(() => {
     if (groupOptions.length > 0 && !selectedOption) {
@@ -69,14 +72,20 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
   }, [groupOptions, selectedOption, competition.id, dispatch]);
 
   useEffect(() => {
-    if (competition.config.advancingPerGroup > maxAdvancing) {
-      dispatch({
-        type: "UPDATE_COMPETITION_CONFIG",
-        competitionId: competition.id,
-        config: { advancingPerGroup: maxAdvancing },
-      });
-    }
-  }, [maxAdvancing, competition.config.advancingPerGroup, competition.id, dispatch]);
+    if (advancingOptions.length === 0) return;
+    const current = competition.config.advancingPerGroup;
+    if (advancingOptions.includes(current)) return;
+
+    const target =
+      [...advancingOptions].reverse().find((n) => n <= current) ??
+      advancingOptions[advancingOptions.length - 1];
+
+    dispatch({
+      type: "UPDATE_COMPETITION_CONFIG",
+      competitionId: competition.id,
+      config: { advancingPerGroup: target },
+    });
+  }, [advancingOptions, competition.config.advancingPerGroup, competition.id, dispatch]);
 
   return (
     <div className="rounded-2xl border border-card-hair bg-card p-5">
@@ -161,13 +170,11 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
               }
               className="w-full rounded-lg border border-card-hair bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
             >
-              {Array.from({ length: maxAdvancing }, (_, i) => i + 1).map(
-                (n) => (
-                  <option key={n} value={n}>
-                    Top {n}
-                  </option>
-                )
-              )}
+              {advancingOptions.map((n) => (
+                <option key={n} value={n}>
+                  Top {n}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -190,7 +197,7 @@ function CompetitionSetup({ competition }: { competition: Competition }) {
 
       {competition.teams.length > 0 && groupOptions.length === 0 && (
         <p className="mt-3 text-sm text-ink-soft">
-          Minstens 6 teams nodig voor groepsopties.
+          Minstens 4 teams nodig voor groepsopties.
         </p>
       )}
     </div>

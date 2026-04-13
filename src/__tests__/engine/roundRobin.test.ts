@@ -91,6 +91,7 @@ describe("circleMethodRounds", () => {
   describe("pair-disjoint within a round", () => {
     it("no team appears twice in the same round for n=6", () => {
       const rounds = circleMethodRounds(6);
+      expect(rounds.length).toBeGreaterThan(0);
       for (const round of rounds) {
         const teams = new Set<number>();
         for (const [a, b] of round) {
@@ -104,6 +105,7 @@ describe("circleMethodRounds", () => {
 
     it("no team appears twice in the same round for odd n=7", () => {
       const rounds = circleMethodRounds(7);
+      expect(rounds.length).toBeGreaterThan(0);
       for (const round of rounds) {
         const teams = new Set<number>();
         for (const [a, b] of round) {
@@ -153,6 +155,7 @@ describe("circleMethodRounds", () => {
   describe("play counts for even n", () => {
     it("n=6: each team plays in every round", () => {
       const rounds = circleMethodRounds(6);
+      expect(rounds.length).toBeGreaterThan(0);
       for (const round of rounds) {
         const playing = new Set<number>();
         for (const [a, b] of round) {

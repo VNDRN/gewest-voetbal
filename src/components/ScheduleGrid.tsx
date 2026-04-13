@@ -66,24 +66,17 @@ function DraggableCard({
   id,
   canDrag,
   children,
-  sourceActive,
 }: {
   id: string;
   canDrag: boolean;
   children: React.ReactNode;
-  sourceActive: boolean;
 }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id,
     disabled: !canDrag,
   });
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className={sourceActive ? "opacity-30" : undefined}
-    >
+    <div ref={setNodeRef} {...attributes} {...listeners}>
       {children}
     </div>
   );
@@ -374,7 +367,6 @@ export default function ScheduleGrid({
                             <DraggableCard
                               id={match.id}
                               canDrag={canDrag}
-                              sourceActive={!!isSource}
                             >
                               {cardNode}
                             </DraggableCard>

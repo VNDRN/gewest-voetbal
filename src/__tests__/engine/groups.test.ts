@@ -47,13 +47,27 @@ describe("getGroupOptions", () => {
   });
 
   describe("boundary conditions", () => {
-    it("returns empty for fewer than 6 teams", () => {
+    it("returns empty for fewer than 4 teams", () => {
       expect(getGroupOptions(0)).toEqual([]);
       expect(getGroupOptions(1)).toEqual([]);
       expect(getGroupOptions(2)).toEqual([]);
       expect(getGroupOptions(3)).toEqual([]);
-      expect(getGroupOptions(4)).toEqual([]);
-      expect(getGroupOptions(5)).toEqual([]);
+    });
+
+    it("returns exactly one option for 4 teams (1×4)", () => {
+      const options = getGroupOptions(4);
+      expect(options).toHaveLength(1);
+      expect(options[0]).toEqual(
+        expect.objectContaining({ groupCount: 1, sizes: [4], label: "1x4" })
+      );
+    });
+
+    it("returns exactly one option for 5 teams (1×5)", () => {
+      const options = getGroupOptions(5);
+      expect(options).toHaveLength(1);
+      expect(options[0]).toEqual(
+        expect.objectContaining({ groupCount: 1, sizes: [5], label: "1x5" })
+      );
     });
 
     it("returns exactly one option for 6 teams (2×3)", () => {
@@ -569,8 +583,8 @@ describe("maxAdvancingPerGroup", () => {
 });
 
 describe("qualifying count never exceeds team count", () => {
-  it("for all team counts 6-24, no valid config produces more qualifiers than teams", () => {
-    for (let teamCount = 6; teamCount <= 24; teamCount++) {
+  it("for all team counts 4-24, no valid config produces more qualifiers than teams", () => {
+    for (let teamCount = 4; teamCount <= 24; teamCount++) {
       const options = getGroupOptions(teamCount);
       for (const opt of options) {
         const maxAdv = maxAdvancingPerGroup(opt.sizes);

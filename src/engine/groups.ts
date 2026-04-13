@@ -8,11 +8,11 @@ function nextPowerOf2(n: number): number {
 }
 
 export function getGroupOptions(teamCount: number): GroupOption[] {
-  if (teamCount < 6) return [];
+  if (teamCount < 4) return [];
 
   const MIN_SIZE = 3;
   const MAX_SIZE = 5;
-  const MIN_GROUPS = 2;
+  const MIN_GROUPS = 1;
   const options: GroupOption[] = [];
   const seen = new Set<string>();
 

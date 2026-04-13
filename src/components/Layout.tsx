@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTournament, useTournamentDispatch } from "../context/TournamentContext";
 import {
   exportToJson,
@@ -7,7 +7,8 @@ import {
   exportMatchesCsv,
   exportStandingsCsv,
 } from "../persistence/exportImport";
-import { useRef } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { clearState } from "../persistence/localStorage";
 
 const NAV_ITEMS = [
   { to: "/setup", label: "Instellingen" },
@@ -20,6 +21,8 @@ export default function Layout() {
   const tournament = useTournament();
   const dispatch = useTournamentDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const [showResetModal, setShowResetModal] = useState(false);
 
   function handleExportJson() {
     const json = exportToJson(tournament);
@@ -53,38 +56,69 @@ export default function Layout() {
     e.target.value = "";
   }
 
+  function handleReset() {
+    clearState();
+    dispatch({ type: "RESET" });
+    setShowResetModal(false);
+    navigate("/setup");
+  }
+
+  function handleExportAndClose() {
+    handleExportJson();
+    setShowResetModal(false);
+  }
+
+  const closeResetModal = useCallback(() => setShowResetModal(false), []);
+
+  useEffect(() => {
+    if (!showResetModal) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") closeResetModal();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [showResetModal, closeResetModal]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-gray-900 text-white">
         <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">{tournament.name}</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExportJson}
-              className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-            >
-              Exporteer JSON
-            </button>
-            <button
-              onClick={handleExportCsv}
-              className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-            >
-              Exporteer CSV
-            </button>
-            <button
-              onClick={handleImport}
-              className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
-            >
-              Importeer
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold">{tournament.name}</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportJson}
+                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
+              >
+                Exporteer JSON
+              </button>
+              <button
+                onClick={handleExportCsv}
+                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
+              >
+                Exporteer CSV
+              </button>
+              <button
+                onClick={handleImport}
+                className="rounded bg-gray-700 px-3 py-1.5 text-sm hover:bg-gray-600"
+              >
+                Importeer
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
           </div>
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Reset toernooi
+          </button>
         </div>
         <nav className="mx-auto max-w-7xl px-4">
           <div className="flex gap-1">
@@ -109,6 +143,45 @@ export default function Layout() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         <Outlet />
       </main>
+      {showResetModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={closeResetModal}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeResetModal}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              Toernooi resetten?
+            </h3>
+            <p className="mb-6 text-sm text-gray-500">
+              Weet je zeker dat je alle data wilt wissen? Dit kan niet ongedaan
+              worden gemaakt.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleExportAndClose}
+                className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600"
+              >
+                Exporteer eerst
+              </button>
+              <button
+                onClick={handleReset}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Wis alles
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

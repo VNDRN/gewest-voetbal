@@ -42,6 +42,13 @@ body {
   color: var(--color-ink);
 }
 
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 .display {
   font-family: var(--font-display);
   font-weight: 900;

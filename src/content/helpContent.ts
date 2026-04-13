@@ -42,7 +42,7 @@ export const helpContent: Record<HelpRoute, HelpEntry> = {
       },
       {
         label: "Groepsindeling",
-        description: "Kies hoeveel groepen (min. 6 teams nodig).",
+        description: "Kies hoeveel groepen (min. 4 teams nodig).",
       },
       {
         label: "Doorgang per groep",

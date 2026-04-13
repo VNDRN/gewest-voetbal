@@ -59,13 +59,13 @@ export default function ScheduleGrid({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
-            <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500">
+            <th className="eyebrow-muted border border-card-hair bg-surface px-3 py-2 text-left text-[11px]">
               Tijd
             </th>
             {Array.from({ length: fieldCount }, (_, i) => (
               <th
                 key={i}
-                className="border border-gray-200 bg-gray-50 px-3 py-2 text-center text-xs font-medium text-gray-500"
+                className="eyebrow-muted border border-card-hair bg-surface px-3 py-2 text-center text-[11px]"
               >
                 Veld {i + 1}
               </th>
@@ -86,7 +86,7 @@ export default function ScheduleGrid({
             return (
               <Fragment key={slot}>
                 <tr>
-                  <td className="border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-600 whitespace-nowrap">
+                  <td className="border border-card-hair bg-surface px-3 py-2 text-xs font-semibold text-ink-soft tabular-nums whitespace-nowrap">
                     {formatTime(slot, startTime, slotDurationMinutes, breaks)}
                   </td>
                   {Array.from({ length: fieldCount }, (_, field) => {
@@ -95,14 +95,14 @@ export default function ScheduleGrid({
                       return (
                         <td
                           key={field}
-                          className="border border-gray-200 px-3 py-2"
+                          className="border border-card-hair px-3 py-2"
                         />
                       );
                     }
                     const isWomens = match.competitionId === "womens";
                     const badgeClass = isWomens
-                      ? "bg-pink-100 text-pink-700"
-                      : "bg-blue-100 text-blue-700";
+                      ? "bg-brand/10 text-brand"
+                      : "bg-ink/10 text-ink";
                     const isKnockout = match.phase === "knockout";
                     const homeName = match.homeTeamId
                       ? (teamNames.get(match.homeTeamId) ?? "?")
@@ -119,20 +119,20 @@ export default function ScheduleGrid({
                           >
                             {isWomens ? "W" : "M"}
                           </span>
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-ink-muted">
                             {match.groupName}
                           </span>
                         </div>
                         <div className="mt-1 text-xs">
-                          <span className={isKnockout && !match.homeTeamId ? "italic text-gray-400" : "font-medium"}>
+                          <span className={isKnockout && !match.homeTeamId ? "italic text-ink-muted" : "font-medium"}>
                             {homeName}
                           </span>
-                          <span className="mx-1 text-gray-400">
+                          <span className="mx-1 text-ink-muted">
                             {match.score
                               ? `${match.score.home}-${match.score.away}`
                               : "vs"}
                           </span>
-                          <span className={isKnockout && !match.awayTeamId ? "italic text-gray-400" : "font-medium"}>
+                          <span className={isKnockout && !match.awayTeamId ? "italic text-ink-muted" : "font-medium"}>
                             {awayName}
                           </span>
                         </div>
@@ -144,19 +144,19 @@ export default function ScheduleGrid({
                     return (
                       <td
                         key={field}
-                        className="border border-gray-200 px-2 py-1.5"
+                        className="border border-card-hair px-2 py-1.5"
                       >
                         {canClick ? (
                           <button
                             onClick={() => onMatchClick(match)}
-                            className={`w-full rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50 ${
-                              isKnockout ? "border border-dashed border-gray-300" : ""
+                            className={`w-full rounded-lg p-1.5 text-left transition-colors hover:bg-surface ${
+                              isKnockout ? "border border-dashed border-card-hair" : ""
                             }`}
                           >
                             {inner}
                           </button>
                         ) : (
-                          <div className="rounded-lg border border-dashed border-gray-300 p-1.5">
+                          <div className="rounded-lg border border-dashed border-card-hair p-1.5">
                             {inner}
                           </div>
                         )}
@@ -168,15 +168,15 @@ export default function ScheduleGrid({
                   <tr>
                     <td
                       colSpan={fieldCount + 1}
-                      className="border border-gray-200 p-0"
+                      className="border border-card-hair p-0"
                     >
-                      <div className="flex items-center justify-between border-y-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2.5">
+                      <div className="flex items-center justify-between border-y-2 border-dashed border-beige bg-beige/20 px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <span className="text-base">☕</span>
-                          <span className="text-sm font-semibold text-yellow-800">
+                          <span className="text-sm font-bold text-ink">
                             Pauze
                           </span>
-                          <span className="text-xs text-yellow-700">
+                          <span className="text-xs text-ink-soft">
                             {breakStartTime} – {breakEndTime}
                           </span>
                         </div>
@@ -191,12 +191,12 @@ export default function ScheduleGrid({
                                 Math.max(1, Number(e.target.value))
                               )
                             }
-                            className="w-14 rounded-md border border-yellow-400 bg-white px-1.5 py-0.5 text-center text-xs"
+                            className="w-14 rounded-md border border-beige bg-card px-1.5 py-0.5 text-center text-xs tabular-nums text-ink"
                           />
-                          <span className="text-xs text-yellow-700">min</span>
+                          <span className="text-xs text-ink-soft">min</span>
                           <button
                             onClick={() => onRemoveBreak(schedBreak.id)}
-                            className="text-sm text-red-600 opacity-60 hover:opacity-100"
+                            className="text-sm text-brand opacity-60 hover:opacity-100"
                           >
                             ✕
                           </button>
@@ -213,9 +213,9 @@ export default function ScheduleGrid({
                     >
                       <button
                         onClick={() => onAddBreak(slot)}
-                        className="flex h-6 w-full cursor-pointer items-center justify-center transition-colors hover:bg-gray-50"
+                        className="flex h-6 w-full cursor-pointer items-center justify-center transition-colors hover:bg-surface"
                       >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-xs text-gray-500 opacity-0 shadow-sm transition-opacity group-hover/add:opacity-100">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-card-hair bg-surface text-xs text-ink-muted opacity-0 shadow-sm transition-opacity group-hover/add:opacity-100">
                           +
                         </span>
                       </button>

@@ -141,7 +141,7 @@ export default function SchedulePage() {
 
   if (allMatches.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+      <div className="rounded-2xl border border-card-hair bg-card p-8 text-center text-ink-soft">
         Nog geen schema. Genereer de loting vanuit Instellingen.
       </div>
     );
@@ -149,7 +149,7 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-lg bg-gray-200 p-1">
+      <div className="inline-flex rounded-xl bg-surface p-1">
         {([
           { id: "all", label: "Alles" },
           { id: "mens", label: "Heren" },
@@ -158,10 +158,10 @@ export default function SchedulePage() {
           <button
             key={id}
             onClick={() => setFilter(id)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
               filter === id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-card text-ink shadow-sm"
+                : "text-ink-soft hover:text-ink"
             }`}
           >
             {label}
@@ -169,7 +169,7 @@ export default function SchedulePage() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="rounded-2xl border border-card-hair bg-card p-4">
         <ScheduleGrid
           matches={filteredMatches}
           fieldCount={tournament.config.fieldCount}
@@ -206,7 +206,7 @@ export default function SchedulePage() {
                   key={s.compId}
                   onClick={() => generateBracket(s.compId)}
                   disabled={!s.allPlayed}
-                  className="w-full rounded-xl bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="w-full rounded-xl bg-ink py-3 text-lg font-bold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:bg-ink/30"
                 >
                   {s.compName} knock-outfase genereren
                 </button>

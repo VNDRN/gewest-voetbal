@@ -40,7 +40,7 @@ export default function GroupsPage() {
     return (
       <div className="space-y-4">
         <CompetitionToggle activeId={activeComp} onChange={setActiveComp} />
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+        <div className="rounded-2xl border border-card-hair bg-card p-8 text-center text-ink-soft">
           Nog geen groepen. Ga naar Instellingen om de loting te genereren.
         </div>
       </div>
@@ -57,9 +57,9 @@ export default function GroupsPage() {
           return (
             <div
               key={group.id}
-              className="rounded-xl border border-gray-200 bg-white p-4"
+              className="rounded-2xl border border-card-hair bg-card p-5"
             >
-              <h3 className="mb-3 text-base font-semibold">{group.name}</h3>
+              <h3 className="display mb-4 text-xl text-ink">{group.name}</h3>
               <StandingsTable
                 rows={standings}
                 advancingCount={competition.config.advancingPerGroup}

@@ -710,4 +710,142 @@ describe("scheduleMatches", () => {
       assertHardConstraints(result, 1);
     });
   });
+
+  describe("packing density (issue #22)", () => {
+    function slotMatchCounts(scheduled: Match[]): number[] {
+      const counts = new Map<number, number>();
+      for (const m of scheduled) {
+        counts.set(m.timeSlot, (counts.get(m.timeSlot) ?? 0) + 1);
+      }
+      const maxSlot = Math.max(...counts.keys());
+      const out: number[] = [];
+      for (let s = 0; s <= maxSlot; s++) out.push(counts.get(s) ?? 0);
+      return out;
+    }
+
+    it("single 6-team group on 4 fields has no trailing single-match slots", () => {
+      const matches = roundRobin(
+        ["t0", "t1", "t2", "t3", "t4", "t5"],
+        "g1"
+      );
+      const result = scheduleMatches(matches, 4);
+      assertHardConstraints(result, 4);
+
+      const counts = slotMatchCounts(result);
+      // No non-empty slot should have fewer matches than a later non-empty slot.
+      for (let i = 0; i < counts.length - 1; i++) {
+        if (counts[i] === 0) continue;
+        for (let j = i + 1; j < counts.length; j++) {
+          if (counts[j] === 0) continue;
+          expect(counts[i]).toBeGreaterThanOrEqual(counts[j]);
+        }
+      }
+    });
+
+    it("single 6-team group on 4 fields uses minimum number of slots (5)", () => {
+      // 6 teams → 15 matches. With 4 fields and the constraint that each team
+      // plays in every round, we need at least ceil(15/3)=5 slots (round-limited,
+      // not field-limited — each round has 3 matches).
+      const matches = roundRobin(
+        ["t0", "t1", "t2", "t3", "t4", "t5"],
+        "g1"
+      );
+      const result = scheduleMatches(matches, 4);
+      const maxSlot = Math.max(...result.map((m) => m.timeSlot));
+      expect(maxSlot).toBe(4); // 5 slots indexed 0..4
+    });
+
+    it("single 4-team group on 2 fields packs into exactly 3 slots of 2", () => {
+      const matches = roundRobin(["a", "b", "c", "d"], "g1");
+      const result = scheduleMatches(matches, 2);
+      const counts = slotMatchCounts(result);
+      expect(counts).toEqual([2, 2, 2]);
+    });
+
+    it("two 6-team groups on 4 fields: tail is at most one short slot", () => {
+      const g1 = roundRobin(["a0", "a1", "a2", "a3", "a4", "a5"], "ga");
+      const g2 = roundRobin(["b0", "b1", "b2", "b3", "b4", "b5"], "gb");
+      const result = scheduleMatches([...g1, ...g2], 4);
+      assertHardConstraints(result, 4);
+
+      const counts = slotMatchCounts(result);
+      // Monotonically non-increasing: once you drop below 4, you never climb back.
+      for (let i = 1; i < counts.length; i++) {
+        expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+      }
+    });
+
+    const monotonicConfigs = [
+      { teams: 4, fields: 2 },
+      { teams: 4, fields: 4 },
+      { teams: 5, fields: 2 },
+      { teams: 5, fields: 3 },
+      { teams: 6, fields: 3 },
+      { teams: 6, fields: 4 },
+    ];
+    for (const { teams, fields } of monotonicConfigs) {
+      it(`${teams} teams, ${fields} fields: match counts are non-increasing across slots`, () => {
+        const ids = Array.from({ length: teams }, (_, i) => `t${i}`);
+        const result = scheduleMatches(roundRobin(ids, "g"), fields);
+        const counts = slotMatchCounts(result);
+        for (let i = 1; i < counts.length; i++) {
+          expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+        }
+      });
+    }
+  });
+
+  describe("cross-competition packing density (issue #22 follow-up)", () => {
+    function slotMatchCounts(scheduled: Match[]): number[] {
+      const counts = new Map<number, number>();
+      for (const m of scheduled) {
+        counts.set(m.timeSlot, (counts.get(m.timeSlot) ?? 0) + 1);
+      }
+      const maxSlot = Math.max(...counts.keys());
+      const out: number[] = [];
+      for (let s = 0; s <= maxSlot; s++) out.push(counts.get(s) ?? 0);
+      return out;
+    }
+
+    it("interleaves a 5-team competition with two 4-team competitions on 4 fields", () => {
+      // Mirrors real tournament: men's (2 groups of 4) + women's (1 group of 5) on 4 fields.
+      // 12 men's + 10 women's = 22 matches.
+      // Women's needs ≥5 slots (5 rounds of 2 matches, can't pack more than 2/slot).
+      // Men's needs ≥3 slots.
+      // Optimal total = 6 slots (5 full × 4 + 1 tail × 2).
+      const mA = roundRobin(["m1", "m2", "m3", "m4"], "mA");
+      const mB = roundRobin(["m5", "m6", "m7", "m8"], "mB");
+      const w = roundRobin(["w1", "w2", "w3", "w4", "w5"], "wA");
+      const result = scheduleMatches([...mA, ...mB, ...w], 4);
+
+      assertHardConstraints(result, 4);
+      expect(result).toHaveLength(22);
+
+      const maxSlot = Math.max(...result.map((m) => m.timeSlot));
+      expect(maxSlot).toBeLessThanOrEqual(5); // 6 slots indexed 0..5
+    });
+
+    it("doesn't strand the longest competition into trailing sparse slots", () => {
+      // A short competition (2×3 teams, 6 matches in 3 rounds) alongside a long
+      // one (1×5 teams, 10 matches in 5 rounds) on 2 fields.
+      // Short needs 3 slots; long needs 5. Total matches = 16 → ⌈16/2⌉ = 8 slots min.
+      // With proper interleaving we should hit 8 slots.
+      const short1 = roundRobin(["s1a", "s1b", "s1c"], "s1");
+      const short2 = roundRobin(["s2a", "s2b", "s2c"], "s2");
+      const long = roundRobin(["l1", "l2", "l3", "l4", "l5"], "L");
+      const result = scheduleMatches([...short1, ...short2, ...long], 2);
+
+      assertHardConstraints(result, 2);
+      expect(result).toHaveLength(16);
+
+      const maxSlot = Math.max(...result.map((m) => m.timeSlot));
+      expect(maxSlot).toBeLessThanOrEqual(7); // 8 slots indexed 0..7
+
+      const counts = slotMatchCounts(result);
+      // Monotonically non-increasing once we dip below 2.
+      for (let i = 1; i < counts.length; i++) {
+        expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+      }
+    });
+  });
 });

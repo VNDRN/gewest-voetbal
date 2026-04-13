@@ -13,46 +13,60 @@ export default function StandingsTable({
   bestNextPlacedCount,
   teamNames,
 }: Props) {
-  function getRowClass(index: number): string {
-    if (index < advancingCount) return "bg-green-50";
-    if (bestNextPlacedCount > 0 && index === advancingCount) return "bg-yellow-50";
-    return "";
+  function isQualifying(index: number): boolean {
+    if (index < advancingCount) return true;
+    if (bestNextPlacedCount > 0 && index === advancingCount) return true;
+    return false;
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
-          <th className="py-2 pr-2">#</th>
-          <th className="py-2 pr-2">Team</th>
-          <th className="py-2 pr-2 text-center">GS</th>
-          <th className="py-2 pr-2 text-center">W</th>
-          <th className="py-2 pr-2 text-center">G</th>
-          <th className="py-2 pr-2 text-center">V</th>
-          <th className="py-2 pr-2 text-center">DV</th>
-          <th className="py-2 pr-2 text-center">DT</th>
-          <th className="py-2 pr-2 text-center">DS</th>
-          <th className="py-2 text-center font-bold">Ptn</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => (
-          <tr key={row.teamId} className={`border-b border-gray-100 ${getRowClass(i)}`}>
-            <td className="py-1.5 pr-2 text-gray-500">{i + 1}</td>
-            <td className="py-1.5 pr-2 font-medium">
-              {teamNames.get(row.teamId) ?? row.teamId}
-            </td>
-            <td className="py-1.5 pr-2 text-center">{row.played}</td>
-            <td className="py-1.5 pr-2 text-center">{row.won}</td>
-            <td className="py-1.5 pr-2 text-center">{row.drawn}</td>
-            <td className="py-1.5 pr-2 text-center">{row.lost}</td>
-            <td className="py-1.5 pr-2 text-center">{row.goalsFor}</td>
-            <td className="py-1.5 pr-2 text-center">{row.goalsAgainst}</td>
-            <td className="py-1.5 pr-2 text-center">{row.goalDifference}</td>
-            <td className="py-1.5 text-center font-bold">{row.points}</td>
+    <div className="overflow-hidden rounded-2xl border border-card-hair bg-card">
+      <table className="w-full text-sm text-ink">
+        <thead>
+          <tr className="eyebrow-muted text-left">
+            <th className="px-3 py-3 text-[11px]">#</th>
+            <th className="px-3 py-3 text-[11px]">Team</th>
+            <th className="px-3 py-3 text-center text-[11px]">GS</th>
+            <th className="px-3 py-3 text-center text-[11px]">W</th>
+            <th className="px-3 py-3 text-center text-[11px]">G</th>
+            <th className="px-3 py-3 text-center text-[11px]">V</th>
+            <th className="px-3 py-3 text-center text-[11px]">DV</th>
+            <th className="px-3 py-3 text-center text-[11px]">DT</th>
+            <th className="px-3 py-3 text-center text-[11px]">DS</th>
+            <th className="px-3 py-3 text-center text-[11px]">Ptn</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const qualifying = isQualifying(i);
+            const isAdvancing = i < advancingCount;
+            return (
+              <tr
+                key={row.teamId}
+                className={`border-t border-card-hair ${qualifying ? "bg-[var(--color-advancing-tint)]" : ""}`}
+              >
+                <td className="px-3 py-3 font-bold tabular-nums">{i + 1}</td>
+                <td className={`px-3 py-3 ${isAdvancing ? "font-bold" : ""}`}>
+                  {teamNames.get(row.teamId) ?? row.teamId}
+                  {isAdvancing && (
+                    <span className="ml-1.5 align-[1px] text-[10px] text-ink-muted">
+                      ▲
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.played}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.won}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.drawn}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.lost}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.goalsFor}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.goalsAgainst}</td>
+                <td className="px-3 py-3 text-center tabular-nums">{row.goalDifference}</td>
+                <td className="px-3 py-3 text-center font-bold tabular-nums">{row.points}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

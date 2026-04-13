@@ -84,11 +84,11 @@ export default function Layout() {
       <header className="bg-chrome border-b border-hair">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-5">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#0a0a0a]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-ink">
               <img
-                src="/SMR.png"
+                src="/rat.svg"
                 alt="Gewest Sante Me Ratje"
-                className="h-10 w-auto object-contain"
+                className="h-9 w-9 object-contain"
               />
             </div>
             <h1 className="display text-2xl text-ink">{tournament.name}</h1>

@@ -5,6 +5,7 @@ import {
 } from "../context/TournamentContext";
 import ScheduleGrid from "../components/ScheduleGrid";
 import type { ScheduledMatch } from "../components/ScheduleGrid";
+import type { Change, KnockoutRoundInfo } from "../engine/scheduleMove";
 import ScoreInput from "../components/ScoreInput";
 import { calculateStandings, rankBestNextPlaced } from "../engine/standings";
 import { seedBracket, advanceWinner } from "../engine/knockout";
@@ -72,6 +73,21 @@ export default function SchedulePage() {
       })),
     [tournament.competitions]
   );
+
+  const knockoutRoundInfos: KnockoutRoundInfo[] = useMemo(() => {
+    const out: KnockoutRoundInfo[] = [];
+    for (const comp of tournament.competitions) {
+      for (const r of comp.knockoutRounds) {
+        out.push({
+          competitionId: comp.id,
+          name: r.name,
+          matchIds: r.matches.map((m) => m.id),
+          isThirdPlace: !!r.isThirdPlace,
+        });
+      }
+    }
+    return out;
+  }, [tournament.competitions]);
 
   function generateBracket(compId: string) {
     const comp = tournament.competitions.find((c) => c.id === compId)!;
@@ -172,6 +188,9 @@ export default function SchedulePage() {
       <div className="rounded-2xl border border-card-hair bg-card p-4">
         <ScheduleGrid
           matches={filteredMatches}
+          allMatches={allMatches}
+          knockoutRoundInfos={knockoutRoundInfos}
+          filter={filter}
           fieldCount={tournament.config.fieldCount}
           startTime={tournament.config.startTime}
           slotDurationMinutes={tournament.config.slotDurationMinutes}
@@ -193,6 +212,9 @@ export default function SchedulePage() {
           }
           onRemoveBreak={(breakId) =>
             dispatch({ type: "REMOVE_BREAK", breakId })
+          }
+          onApplyChange={(change: Change) =>
+            dispatch({ type: "APPLY_SCHEDULE_CHANGE", change })
           }
         />
       </div>

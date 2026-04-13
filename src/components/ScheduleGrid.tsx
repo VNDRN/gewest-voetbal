@@ -16,6 +16,36 @@ type ScheduledMatch = {
   awaySourceDescription?: string;
 };
 
+export type MatchPillVariant = "heren" | "dames";
+
+export type MatchMeta = {
+  pillLabel: string;
+  rightEyebrow: string;
+  pillVariant: MatchPillVariant;
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function scheduledMatchMeta(match: ScheduledMatch): MatchMeta {
+  const pillVariant: MatchPillVariant =
+    match.competitionId === "womens" ? "dames" : "heren";
+  const competitionLabel = pillVariant === "dames" ? "Dames" : "Heren";
+
+  if (match.phase === "knockout") {
+    return {
+      pillLabel: match.groupName,
+      rightEyebrow: competitionLabel,
+      pillVariant,
+    };
+  }
+
+  const groupShort = match.groupName.split(" ").pop() ?? match.groupName;
+  return {
+    pillLabel: `${competitionLabel} · ${groupShort}`,
+    rightEyebrow: "Groep",
+    pillVariant,
+  };
+}
+
 type Props = {
   matches: ScheduledMatch[];
   fieldCount: number;

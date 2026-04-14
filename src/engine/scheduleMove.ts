@@ -13,10 +13,12 @@ export type ValidationContext = {
 
 function tierOf(
   matchId: string,
+  competitionId: string,
   rounds: KnockoutRoundInfo[]
 ): { competitionId: string; tier: number; isThirdPlace: boolean } | null {
   for (let ri = 0; ri < rounds.length; ri++) {
     const r = rounds[ri];
+    if (r.competitionId !== competitionId) continue;
     if (!r.matchIds.includes(matchId)) continue;
     if (r.isThirdPlace) {
       // sibling tier of the highest non-isThirdPlace round in the same competition
@@ -53,7 +55,7 @@ function hasRoundOrderViolation(
   }[] = [];
   for (const match of matches) {
     if (match.phase !== "knockout") continue;
-    const t = tierOf(match.id, rounds);
+    const t = tierOf(match.id, match.competitionId, rounds);
     if (!t) continue;
     tiered.push({ m: match, ...t });
   }
@@ -80,12 +82,14 @@ export type MoveChange = {
   matchId: string;
   toSlot: number;
   toField: number;
+  competitionId?: string;
 };
 
 export type SwapChange = {
   kind: "swap";
   matchAId: string;
   matchBId: string;
+  competitionId?: string;
 };
 
 export type InsertChange = {
@@ -93,6 +97,7 @@ export type InsertChange = {
   matchId: string;
   atSlot: number;
   toField: number;
+  competitionId?: string;
 };
 
 export type Change = MoveChange | SwapChange | InsertChange;
@@ -160,11 +165,14 @@ export function classifyTargets(
   activeMatchId: string,
   fieldCount: number,
   breaks: ScheduleBreak[],
-  context: ValidationContext = { rounds: [] }
+  context: ValidationContext = { rounds: [] },
+  activeCompetitionId?: string
 ): Map<string, TargetClass> {
   const map = new Map<string, TargetClass>();
 
-  const active = matches.find((m) => m.id === activeMatchId);
+  const active = matches.find(
+    (m) => m.id === activeMatchId && (activeCompetitionId == null || m.competitionId === activeCompetitionId)
+  );
   if (!active) return map;
 
   const maxSlot = matches.reduce((max, m) => Math.max(max, m.timeSlot), 0);
@@ -179,19 +187,23 @@ export function classifyTargets(
       if (!occupant) {
         const res = validateChange(
           matches,
-          { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field },
+          { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field, competitionId: active.competitionId },
           context
         );
         map.set(id, res.ok ? "valid-move" : "invalid");
         continue;
       }
-      if (occupant.id === activeMatchId) {
+      if (occupant.id === activeMatchId && occupant.competitionId === active.competitionId) {
         map.set(id, "valid-move");
+        continue;
+      }
+      if (occupant.competitionId !== active.competitionId) {
+        map.set(id, "invalid");
         continue;
       }
       const res = validateChange(
         matches,
-        { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id },
+        { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id, competitionId: active.competitionId },
         context
       );
       map.set(id, res.ok ? "valid-swap" : "invalid");
@@ -213,7 +225,7 @@ export function classifyTargets(
     for (let field = 0; field < fieldCount; field++) {
       const res = validateChange(
         matches,
-        { kind: "insert", matchId: activeMatchId, atSlot, toField: field },
+        { kind: "insert", matchId: activeMatchId, atSlot, toField: field, competitionId: active.competitionId },
         context
       );
       const cls: TargetClass = res.ok ? "valid-insert" : "invalid";
@@ -232,7 +244,8 @@ export function classifyTargets(
 export function changeFromDragEnd(
   activeMatchId: string,
   overId: string,
-  matches: ScheduledMatch[]
+  matches: ScheduledMatch[],
+  activeCompetitionId?: string
 ): Change | null {
   if (overId.startsWith("cell-")) {
     const parts = overId.split("-");
@@ -240,17 +253,20 @@ export function changeFromDragEnd(
     const slot = Number(parts[1]);
     const field = Number(parts[2]);
     if (!Number.isFinite(slot) || !Number.isFinite(field)) return null;
-    const active = matches.find((m) => m.id === activeMatchId);
+    const active = matches.find(
+      (m) => m.id === activeMatchId && (activeCompetitionId == null || m.competitionId === activeCompetitionId)
+    );
     if (active && active.timeSlot === slot && active.fieldIndex === field) {
       return null;
     }
     const occupant = matches.find(
-      (m) => m.timeSlot === slot && m.fieldIndex === field
+      (m) => m.timeSlot === slot && m.fieldIndex === field &&
+        (activeCompetitionId == null || m.competitionId === activeCompetitionId)
     );
     if (!occupant) {
-      return { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field };
+      return { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field, competitionId: activeCompetitionId };
     }
-    return { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id };
+    return { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id, competitionId: activeCompetitionId };
   }
   if (overId.startsWith("insert-pre-") || overId.startsWith("insert-")) {
     const stripped = overId.startsWith("insert-pre-")
@@ -261,9 +277,13 @@ export function changeFromDragEnd(
     const atSlot = Number(parts[0]);
     const field = Number(parts[1]);
     if (!Number.isFinite(atSlot) || !Number.isFinite(field)) return null;
-    return { kind: "insert", matchId: activeMatchId, atSlot, toField: field };
+    return { kind: "insert", matchId: activeMatchId, atSlot, toField: field, competitionId: activeCompetitionId };
   }
   return null;
+}
+
+function matchesId(m: ScheduledMatch, id: string, competitionId?: string): boolean {
+  return m.id === id && (competitionId == null || m.competitionId === competitionId);
 }
 
 export function applyChange(
@@ -273,23 +293,23 @@ export function applyChange(
   switch (change.kind) {
     case "move":
       return matches.map((m) =>
-        m.id === change.matchId
+        matchesId(m, change.matchId, change.competitionId)
           ? { ...m, timeSlot: change.toSlot, fieldIndex: change.toField }
           : m
       );
     case "swap": {
-      const a = matches.find((m) => m.id === change.matchAId);
-      const b = matches.find((m) => m.id === change.matchBId);
+      const a = matches.find((m) => matchesId(m, change.matchAId, change.competitionId));
+      const b = matches.find((m) => matchesId(m, change.matchBId, change.competitionId));
       if (!a || !b) return matches;
       return matches.map((m) => {
-        if (m.id === a.id) return { ...m, timeSlot: b.timeSlot, fieldIndex: b.fieldIndex };
-        if (m.id === b.id) return { ...m, timeSlot: a.timeSlot, fieldIndex: a.fieldIndex };
+        if (m === a) return { ...m, timeSlot: b.timeSlot, fieldIndex: b.fieldIndex };
+        if (m === b) return { ...m, timeSlot: a.timeSlot, fieldIndex: a.fieldIndex };
         return m;
       });
     }
     case "insert": {
       return matches.map((m) => {
-        if (m.id === change.matchId) {
+        if (matchesId(m, change.matchId, change.competitionId)) {
           return { ...m, timeSlot: change.atSlot, fieldIndex: change.toField };
         }
         if (m.timeSlot >= change.atSlot) {

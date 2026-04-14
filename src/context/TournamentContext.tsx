@@ -273,25 +273,54 @@ function tournamentReducer(
       const { flat, rounds } = flattenMatches(state);
       const res = validateChange(flat, action.change, { rounds });
       if (!res.ok) return state;
+
+      // For insert: applyChange shifts match slots but not breaks — fix that here.
+      let updatedBreaks = state.config.breaks;
+      if (action.change.kind === "insert") {
+        updatedBreaks = updatedBreaks.map((b) =>
+          b.afterTimeSlot >= action.change.atSlot
+            ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
+            : b
+        );
+      }
+
+      // Compress any empty timeslots left behind by move/insert.
+      const usedSlots = [...new Set(res.next.map((m) => m.timeSlot))].sort(
+        (a, b) => a - b
+      );
+      const isDense = usedSlots.every((slot, i) => slot === i);
+      const slotMap = isDense
+        ? null
+        : new Map(usedSlots.map((slot, i) => [slot, i]));
+
+      if (slotMap) {
+        updatedBreaks = updatedBreaks
+          .filter((b) => slotMap.has(b.afterTimeSlot))
+          .map((b) => ({ ...b, afterTimeSlot: slotMap.get(b.afterTimeSlot)! }));
+      }
+
       const posById = new Map<string, { timeSlot: number; fieldIndex: number }>();
       for (const nm of res.next) {
-        posById.set(nm.id, { timeSlot: nm.timeSlot, fieldIndex: nm.fieldIndex });
+        const timeSlot = slotMap ? slotMap.get(nm.timeSlot)! : nm.timeSlot;
+        posById.set(`${nm.competitionId}/${nm.id}`, { timeSlot, fieldIndex: nm.fieldIndex });
       }
+
       return {
         ...state,
+        config: { ...state.config, breaks: updatedBreaks },
         competitions: state.competitions.map((c) => ({
           ...c,
           groups: c.groups.map((g) => ({
             ...g,
             matches: g.matches.map((mm) => {
-              const p = posById.get(mm.id);
+              const p = posById.get(`${c.id}/${mm.id}`);
               return p ? { ...mm, timeSlot: p.timeSlot, fieldIndex: p.fieldIndex } : mm;
             }),
           })),
           knockoutRounds: c.knockoutRounds.map((r) => ({
             ...r,
             matches: r.matches.map((mm) => {
-              const p = posById.get(mm.id);
+              const p = posById.get(`${c.id}/${mm.id}`);
               return p ? { ...mm, timeSlot: p.timeSlot, fieldIndex: p.fieldIndex } : mm;
             }),
           })),

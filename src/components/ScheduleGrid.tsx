@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState, Fragment } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from "react";
 import {
   DndContext,
   DragOverlay,
+  pointerWithin,
   useDraggable,
   useDroppable,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import { useDndSensors } from "../hooks/useDndSensors";
 import {
@@ -49,22 +51,56 @@ export function scheduledMatchMeta(match: ScheduledMatch): MatchMeta {
   };
 }
 
+/** Sync DOM measure before insert strips mount — `event.active.rect.initial` is often null in onDragStart. */
+function scheduleDragRootRectBeforeLayout(event: DragStartEvent): {
+  top: number;
+  left: number;
+} | null {
+  const e = event.activatorEvent;
+  if (!e) return null;
+  let x: number | undefined;
+  let y: number | undefined;
+  if ("clientX" in e && typeof (e as PointerEvent).clientX === "number") {
+    x = (e as PointerEvent).clientX;
+    y = (e as PointerEvent).clientY;
+  } else if ("touches" in e && (e as TouchEvent).touches[0]) {
+    const t = (e as TouchEvent).touches[0];
+    x = t.clientX;
+    y = t.clientY;
+  }
+  if (x === undefined || y === undefined) return null;
+  const hit = document.elementFromPoint(x, y);
+  const root = hit?.closest("[data-schedule-drag-root]");
+  if (!root) return null;
+  const br = root.getBoundingClientRect();
+  return { top: br.top, left: br.left };
+}
+
 function DraggableCard({
   id,
+  data,
   canDrag,
   children,
 }: {
   id: string;
+  data?: Record<string, unknown>;
   canDrag: boolean;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id,
+    data,
     disabled: !canDrag,
   });
   const cls = canDrag ? "cursor-grab [&_button]:cursor-grab" : "";
   return (
-    <div ref={setNodeRef} className={cls} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      data-schedule-drag-root=""
+      className={cls}
+      {...attributes}
+      {...listeners}
+    >
       {children}
     </div>
   );
@@ -316,12 +352,45 @@ export default function ScheduleGrid({
 
   const sensors = useDndSensors();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeCompetitionId, setActiveCompetitionId] = useState<string | null>(null);
   const [targetMap, setTargetMap] = useState<Map<string, TargetClass>>(new Map());
   const [overId, setOverId] = useState<string | null>(null);
 
+  // Pre-insert-strip position: sync DOM measure in onDragStart, else dnd-kit rect, else modifier fallback.
+  const initialDraggingRectRef = useRef<{ top: number; left: number } | null>(null);
+
+  // Compensates when the source cell moves (insert strips, hover heights, scroll). Baseline should
+  // be pre-insert-strip via `scheduleDragRootRectBeforeLayout`; if missing, first `activeNodeRect`.
+  const layoutShiftModifier = useCallback<Modifier>(
+    ({ activeNodeRect, transform }) => {
+      if (!activeNodeRect) return transform;
+      if (!initialDraggingRectRef.current) {
+        initialDraggingRectRef.current = {
+          top: activeNodeRect.top,
+          left: activeNodeRect.left,
+        };
+      }
+      const yAdj = activeNodeRect.top - initialDraggingRectRef.current.top;
+      const xAdj = activeNodeRect.left - initialDraggingRectRef.current.left;
+      return {
+        ...transform,
+        x: transform.x - xAdj,
+        y: transform.y - yAdj,
+      };
+    },
+    []
+  );
+
   const activeMatch = useMemo(
-    () => (activeId ? allMatches.find((m) => m.id === activeId) ?? null : null),
-    [activeId, allMatches]
+    () =>
+      activeId
+        ? allMatches.find(
+            (m) =>
+              m.id === activeId &&
+              (activeCompetitionId == null || m.competitionId === activeCompetitionId)
+          ) ?? null
+        : null,
+    [activeId, activeCompetitionId, allMatches]
   );
 
   useEffect(() => {
@@ -333,12 +402,20 @@ export default function ScheduleGrid({
   }, [activeId]);
 
   function handleDragStart(event: DragStartEvent) {
-    const id = event.active.id as string;
+    // Draggable id is `${competitionId}:${matchId}` — parse to avoid dnd-kit id-map collisions
+    // when both competitions share the same match id (e.g. ko-1).
+    const compositeId = event.active.id as string;
+    const colonIdx = compositeId.indexOf(":");
+    const compId = colonIdx >= 0 ? compositeId.slice(0, colonIdx) : undefined;
+    const id = colonIdx >= 0 ? compositeId.slice(colonIdx + 1) : compositeId;
+    const r = event.active.rect.current.initial;
+    const preLayout = scheduleDragRootRectBeforeLayout(event);
+    initialDraggingRectRef.current =
+      preLayout ?? (r ? { top: r.top, left: r.left } : null);
     setActiveId(id);
+    setActiveCompetitionId(compId ?? null);
     setTargetMap(
-      classifyTargets(allMatches, id, fieldCount, breaks, {
-        rounds: knockoutRoundInfos,
-      })
+      classifyTargets(allMatches, id, fieldCount, breaks, { rounds: knockoutRoundInfos }, compId)
     );
   }
 
@@ -349,11 +426,17 @@ export default function ScheduleGrid({
   function handleDragEnd(event: DragEndEvent) {
     const active = event.active;
     const over = event.over;
+    const compositeId = String(active.id);
+    const colonIdx = compositeId.indexOf(":");
+    const compId = colonIdx >= 0 ? compositeId.slice(0, colonIdx) : undefined;
+    const matchId = colonIdx >= 0 ? compositeId.slice(colonIdx + 1) : compositeId;
     setActiveId(null);
+    setActiveCompetitionId(null);
     setTargetMap(new Map());
     setOverId(null);
+    initialDraggingRectRef.current = null;
     if (!over) return;
-    const change = changeFromDragEnd(String(active.id), String(over.id), allMatches);
+    const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
     if (!change) return;
     const cls = targetMap.get(String(over.id));
     if (cls === "invalid") return;
@@ -362,8 +445,10 @@ export default function ScheduleGrid({
 
   function handleDragCancel() {
     setActiveId(null);
+    setActiveCompetitionId(null);
     setTargetMap(new Map());
     setOverId(null);
+    initialDraggingRectRef.current = null;
   }
 
   function chipFor(
@@ -382,6 +467,7 @@ export default function ScheduleGrid({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -440,7 +526,7 @@ export default function ScheduleGrid({
                           : undefined;
                       const cls = activeId ? targetMap.get(cellId) : undefined;
                       const stateCls = cellStateClass(cls);
-                      const isSource = activeId && match?.id === activeId;
+                      const isSource = activeId && match?.id === activeId && match?.competitionId === activeMatch?.competitionId;
 
                       if (!match && hiddenMatch) {
                         return (
@@ -566,7 +652,8 @@ export default function ScheduleGrid({
                         <td key={field} className="border border-card-hair p-1">
                           <DroppableCell id={cellId} className={stateCls}>
                             <DraggableCard
-                              id={match.id}
+                              id={`${match.competitionId}:${match.id}`}
+                              data={{ competitionId: match.competitionId }}
                               canDrag={canDrag}
                             >
                               {cardNode}
@@ -666,7 +753,7 @@ export default function ScheduleGrid({
           </tbody>
         </table>
       </div>
-      <DragOverlay>
+      <DragOverlay modifiers={[layoutShiftModifier]}>
         {activeMatch && (
           <OverlayCard
             match={activeMatch}

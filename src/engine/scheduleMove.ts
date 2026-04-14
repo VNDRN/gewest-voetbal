@@ -106,6 +106,7 @@ export type ValidationReason =
   | "played"
   | "team-conflict"
   | "round-order"
+  | "phase-order"
   | "structural";
 
 export type ValidationResult =
@@ -140,6 +141,21 @@ function hasTeamConflict(matches: ScheduledMatch[]): boolean {
   return false;
 }
 
+function hasPhaseOrderViolation(matches: ScheduledMatch[]): boolean {
+  const competitions = [...new Set(matches.map((m) => m.competitionId))];
+  for (const compId of competitions) {
+    const comp = matches.filter((m) => m.competitionId === compId);
+    const groupMax = comp
+      .filter((m) => m.phase === "group")
+      .reduce((max, m) => Math.max(max, m.timeSlot), -1);
+    const koMin = comp
+      .filter((m) => m.phase === "knockout")
+      .reduce((min, m) => Math.min(min, m.timeSlot), Infinity);
+    if (groupMax >= koMin) return true;
+  }
+  return false;
+}
+
 export function validateChange(
   matches: ScheduledMatch[],
   change: Change,
@@ -154,6 +170,9 @@ export function validateChange(
   }
   if (hasRoundOrderViolation(next, context.rounds)) {
     return { ok: false, reason: "round-order" };
+  }
+  if (hasPhaseOrderViolation(next)) {
+    return { ok: false, reason: "phase-order" };
   }
   return { ok: true, next };
 }

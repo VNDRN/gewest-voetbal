@@ -350,3 +350,167 @@ describe("changeFromDragEnd — insert-pre id", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// competition scoping — applyChange
+// ---------------------------------------------------------------------------
+
+describe("applyChange — competition scoping", () => {
+  it("moves only the match whose competitionId matches when ids collide across competitions", () => {
+    const matches = [
+      m({ id: "ko-1", competitionId: "mens", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "ko-1", competitionId: "womens", timeSlot: 0, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const next = applyChange(matches, {
+      kind: "move",
+      matchId: "ko-1",
+      toSlot: 2,
+      toField: 0,
+      competitionId: "mens",
+    });
+    const mens = next.find((n) => n.competitionId === "mens")!;
+    const womens = next.find((n) => n.competitionId === "womens")!;
+    expect(mens.timeSlot).toBe(2);
+    expect(womens.timeSlot).toBe(0); // untouched
+  });
+
+  it("swaps only the correct competition's pair when ids collide", () => {
+    const matches = [
+      m({ id: "ko-1", competitionId: "mens", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "ko-2", competitionId: "mens", timeSlot: 1, fieldIndex: 0, homeTeamId: "c", awayTeamId: "d" }),
+      m({ id: "ko-1", competitionId: "womens", timeSlot: 0, fieldIndex: 1, homeTeamId: "e", awayTeamId: "f" }),
+      m({ id: "ko-2", competitionId: "womens", timeSlot: 1, fieldIndex: 1, homeTeamId: "g", awayTeamId: "h" }),
+    ];
+    const next = applyChange(matches, {
+      kind: "swap",
+      matchAId: "ko-1",
+      matchBId: "ko-2",
+      competitionId: "mens",
+    });
+    const mensKo1 = next.find((n) => n.id === "ko-1" && n.competitionId === "mens")!;
+    const mensKo2 = next.find((n) => n.id === "ko-2" && n.competitionId === "mens")!;
+    const womensKo1 = next.find((n) => n.id === "ko-1" && n.competitionId === "womens")!;
+    const womensKo2 = next.find((n) => n.id === "ko-2" && n.competitionId === "womens")!;
+    expect(mensKo1.timeSlot).toBe(1);
+    expect(mensKo2.timeSlot).toBe(0);
+    expect(womensKo1.timeSlot).toBe(0); // untouched
+    expect(womensKo2.timeSlot).toBe(1); // untouched
+  });
+});
+
+// ---------------------------------------------------------------------------
+// competition scoping — classifyTargets
+// ---------------------------------------------------------------------------
+
+describe("classifyTargets — competition scoping", () => {
+  const fieldCount = 2;
+  const breaks: ScheduleBreak[] = [];
+
+  it("marks a cell occupied by the other competition as invalid (no cross-competition swap)", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", competitionId: "womens", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
+    ];
+    const map = classifyTargets(matches, "a", fieldCount, breaks, { rounds: [] }, "mens");
+    expect(map.get("cell-1-0")).toBe("invalid");
+  });
+
+  it("marks same-competition occupant with no team conflict as valid-swap", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens", timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", competitionId: "mens", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
+    ];
+    const map = classifyTargets(matches, "a", fieldCount, breaks, { rounds: [] }, "mens");
+    expect(map.get("cell-1-0")).toBe("valid-swap");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// competition scoping — changeFromDragEnd
+// ---------------------------------------------------------------------------
+
+describe("changeFromDragEnd — competition scoping", () => {
+  it("returns a move (not a swap) when cell is occupied by a different competition", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", competitionId: "womens", timeSlot: 2, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const c = changeFromDragEnd("a", "cell-2-1", matches, "mens");
+    // womens occupant is invisible to mens drag — treat cell as empty → move
+    expect(c).toEqual({ kind: "move", matchId: "a", toSlot: 2, toField: 1, competitionId: "mens" });
+  });
+
+  it("includes competitionId in all returned change types", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens", timeSlot: 0, fieldIndex: 0 }),
+      m({ id: "b", competitionId: "mens", timeSlot: 2, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
+    ];
+    const move = changeFromDragEnd("a", "cell-3-0", matches, "mens");
+    expect(move).toMatchObject({ kind: "move", competitionId: "mens" });
+
+    const swap = changeFromDragEnd("a", "cell-2-1", matches, "mens");
+    expect(swap).toMatchObject({ kind: "swap", competitionId: "mens" });
+
+    const insert = changeFromDragEnd("a", "insert-1-0", matches, "mens");
+    expect(insert).toMatchObject({ kind: "insert", competitionId: "mens" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// phase ordering — group matches must precede knockout matches
+// ---------------------------------------------------------------------------
+
+describe("validateChange — phase order", () => {
+  function group(id: string, timeSlot: number, fieldIndex = 0): ScheduledMatch {
+    return m({ id, phase: "group", timeSlot, fieldIndex, competitionId: "mens" });
+  }
+  function ko(id: string, timeSlot: number, fieldIndex = 0): ScheduledMatch {
+    return m({
+      id,
+      phase: "knockout",
+      timeSlot,
+      fieldIndex,
+      competitionId: "mens",
+      homeTeamId: null as unknown as string,
+      awayTeamId: null as unknown as string,
+    });
+  }
+
+  it("rejects moving a group match to the same timeslot as a knockout match", () => {
+    const matches = [group("g1", 0), ko("k1", 2, 1)];
+    const res = validateChange(matches, { kind: "move", matchId: "g1", toSlot: 2, toField: 0 });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("phase-order");
+  });
+
+  it("rejects moving a group match past all knockout matches", () => {
+    const matches = [group("g1", 0), ko("k1", 2)];
+    const res = validateChange(matches, { kind: "move", matchId: "g1", toSlot: 3, toField: 0 });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("phase-order");
+  });
+
+  it("accepts moving a group match to a slot strictly before all knockout matches", () => {
+    const matches = [group("g1", 0), group("g2", 1, 1), ko("k1", 3)];
+    const res = validateChange(matches, { kind: "move", matchId: "g1", toSlot: 2, toField: 0 });
+    expect(res.ok).toBe(true);
+  });
+
+  it("does not apply the phase constraint across competitions", () => {
+    // womens group at the same slot as mens knockout is fine
+    const matches = [
+      m({ id: "g1", phase: "group",    competitionId: "womens", timeSlot: 2, fieldIndex: 1 }),
+      m({ id: "k1", phase: "knockout", competitionId: "mens",   timeSlot: 2, fieldIndex: 0,
+          homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const res = validateChange(matches, { kind: "move", matchId: "g1", toSlot: 2, toField: 1, competitionId: "womens" });
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects swapping a group match into a knockout slot", () => {
+    const matches = [group("g1", 0), ko("k1", 2)];
+    const res = validateChange(matches, { kind: "swap", matchAId: "g1", matchBId: "k1" });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("phase-order");
+  });
+});

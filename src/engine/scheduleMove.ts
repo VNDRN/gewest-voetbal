@@ -114,14 +114,26 @@ export type ValidationResult =
   | { ok: true; next: ScheduledMatch[] }
   | { ok: false; reason: ValidationReason };
 
-function movedMatchIds(change: Change): string[] {
-  if (change.kind === "swap") return [change.matchAId, change.matchBId];
-  return [change.matchId];
+type MatchRef = { id: string; competitionId?: string };
+
+function movedMatchRefs(change: Change): MatchRef[] {
+  if (change.kind === "swap") {
+    return [
+      { id: change.matchAId, competitionId: change.matchACompetitionId },
+      { id: change.matchBId, competitionId: change.matchBCompetitionId },
+    ];
+  }
+  return [{ id: change.matchId, competitionId: change.competitionId }];
 }
 
-function anyPlayed(matches: ScheduledMatch[], ids: string[]): boolean {
-  return ids.some(
-    (id) => matches.find((m) => m.id === id)?.score != null
+function anyPlayed(matches: ScheduledMatch[], refs: MatchRef[]): boolean {
+  return refs.some(
+    (ref) =>
+      matches.find(
+        (m) =>
+          m.id === ref.id &&
+          (ref.competitionId == null || m.competitionId === ref.competitionId)
+      )?.score != null
   );
 }
 
@@ -162,7 +174,7 @@ export function validateChange(
   change: Change,
   context: ValidationContext = { rounds: [] }
 ): ValidationResult {
-  if (anyPlayed(matches, movedMatchIds(change))) {
+  if (anyPlayed(matches, movedMatchRefs(change))) {
     return { ok: false, reason: "played" };
   }
   const next = applyChange(matches, change);

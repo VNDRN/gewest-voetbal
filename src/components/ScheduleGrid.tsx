@@ -21,6 +21,7 @@ import {
 import { formatTime } from "../engine/time";
 import type { ScheduleBreak, ScheduledMatch } from "../types";
 import { ActionChip, type ActionChipKind } from "./ActionChip";
+import { MatchCardContent } from "./MatchCardContent";
 
 export type MatchPillVariant = "heren" | "dames";
 
@@ -210,41 +211,12 @@ function OverlayCard({
   teamNames: Map<string, string>;
   chip: ActionChipKind | null;
 }) {
-  const meta = scheduledMatchMeta(match);
-  const pillClass =
-    meta.pillVariant === "dames"
-      ? "bg-brand/8 text-brand"
-      : "bg-ink/15 text-ink";
-  const homeName = match.homeTeamId
-    ? (teamNames.get(match.homeTeamId) ?? "?")
-    : (match.homeSourceDescription ?? "TBD");
-  const awayName = match.awayTeamId
-    ? (teamNames.get(match.awayTeamId) ?? "?")
-    : (match.awaySourceDescription ?? "TBD");
   return (
     <div
-      className="relative w-[280px] rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
+      className="relative flex w-[280px] flex-col gap-4 rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
       style={{ transform: "rotate(-2.5deg)" }}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}>
-          {meta.pillLabel}
-        </span>
-        <span className="text-[11px] font-medium text-ink-muted">
-          {meta.rightEyebrow}
-        </span>
-      </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="truncate text-right text-[16px] font-semibold text-ink">
-          {homeName}
-        </span>
-        <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
-          VS
-        </span>
-        <span className="truncate text-left text-[16px] font-semibold text-ink">
-          {awayName}
-        </span>
-      </div>
+      <MatchCardContent match={match} teamNames={teamNames} showScore={false} />
       {chip && <ActionChip kind={chip} />}
     </div>
   );
@@ -522,23 +494,11 @@ export default function ScheduleGrid({
                         );
                       }
 
-                      const meta = scheduledMatchMeta(match);
                       const isKnockout = match.phase === "knockout";
-                      const homeName = match.homeTeamId
-                        ? (teamNames.get(match.homeTeamId) ?? "?")
-                        : (match.homeSourceDescription ?? "TBD");
-                      const awayName = match.awayTeamId
-                        ? (teamNames.get(match.awayTeamId) ?? "?")
-                        : (match.awaySourceDescription ?? "TBD");
                       const homeIsTbd = !match.homeTeamId;
                       const awayIsTbd = !match.awayTeamId;
                       const isTbdKnockout =
                         isKnockout && (homeIsTbd || awayIsTbd);
-
-                      const pillClass =
-                        meta.pillVariant === "dames"
-                          ? "bg-brand/8 text-brand"
-                          : "bg-ink/15 text-ink";
 
                       const cardClass = `flex w-full flex-col gap-4 rounded-lg border bg-card p-3 text-left transition-colors ${
                         isTbdKnockout
@@ -547,51 +507,7 @@ export default function ScheduleGrid({
                       } ${isSource ? "opacity-30 border-dashed border-ink/60" : ""}`;
 
                       const inner = (
-                        <>
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}
-                            >
-                              {meta.pillLabel}
-                            </span>
-                            <span className="text-[11px] font-medium text-ink-muted">
-                              {meta.rightEyebrow}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <span
-                              className={`truncate text-right text-[16px] ${
-                                homeIsTbd
-                                  ? "italic font-medium text-ink-muted"
-                                  : "font-semibold text-ink"
-                              }`}
-                            >
-                              {homeName}
-                            </span>
-                            {match.score ? (
-                              <span className="font-display text-[20px] font-black leading-none text-ink tabular-nums whitespace-nowrap">
-                                <span>{match.score.home}</span>
-                                <span className="mx-[3px] font-medium text-ink-muted">
-                                  –
-                                </span>
-                                <span>{match.score.away}</span>
-                              </span>
-                            ) : (
-                              <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
-                                VS
-                              </span>
-                            )}
-                            <span
-                              className={`truncate text-left text-[16px] ${
-                                awayIsTbd
-                                  ? "italic font-medium text-ink-muted"
-                                  : "font-semibold text-ink"
-                              }`}
-                            >
-                              {awayName}
-                            </span>
-                          </div>
-                        </>
+                        <MatchCardContent match={match} teamNames={teamNames} />
                       );
 
                       const canClick =

@@ -108,6 +108,7 @@ export type ValidationReason =
   | "team-conflict"
   | "round-order"
   | "phase-order"
+  | "field-conflict"
   | "structural";
 
 export type ValidationResult =
@@ -135,6 +136,16 @@ function anyPlayed(matches: ScheduledMatch[], refs: MatchRef[]): boolean {
           (ref.competitionId == null || m.competitionId === ref.competitionId)
       )?.score != null
   );
+}
+
+function hasFieldConflict(matches: ScheduledMatch[]): boolean {
+  const seen = new Set<string>();
+  for (const m of matches) {
+    const key = `${m.timeSlot}-${m.fieldIndex}`;
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
 }
 
 function hasTeamConflict(matches: ScheduledMatch[]): boolean {
@@ -178,6 +189,9 @@ export function validateChange(
     return { ok: false, reason: "played" };
   }
   const next = applyChange(matches, change);
+  if (hasFieldConflict(next)) {
+    return { ok: false, reason: "field-conflict" };
+  }
   if (hasTeamConflict(next)) {
     return { ok: false, reason: "team-conflict" };
   }

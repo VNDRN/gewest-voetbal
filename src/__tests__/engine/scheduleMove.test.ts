@@ -542,3 +542,278 @@ describe("validateChange — phase order", () => {
     if (!res.ok) expect(res.reason).toBe("phase-order");
   });
 });
+
+// ---------------------------------------------------------------------------
+// field conflict — no two matches may share (timeSlot, fieldIndex)
+// ---------------------------------------------------------------------------
+
+describe("validateChange — field conflict", () => {
+  it("rejects a move that lands on an occupied (slot, field) cell", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", competitionId: "womens", timeSlot: 2, fieldIndex: 1, homeTeamId: "p", awayTeamId: "q" }),
+    ];
+    const res = validateChange(matches, {
+      kind: "move",
+      matchId: "a",
+      toSlot: 2,
+      toField: 1,
+      competitionId: "mens",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("field-conflict");
+  });
+
+  it("accepts a move into a truly empty (slot, field) cell", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens", timeSlot: 0, fieldIndex: 0 }),
+    ];
+    const res = validateChange(matches, {
+      kind: "move",
+      matchId: "a",
+      toSlot: 3,
+      toField: 2,
+      competitionId: "mens",
+    });
+    expect(res.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cross-competition swap — applyChange
+// ---------------------------------------------------------------------------
+
+describe("applyChange — cross-competition swap", () => {
+  it("exchanges (slot, field) of matches in different competitions and leaves others alone", () => {
+    const matches = [
+      m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
+      m({ id: "b", competitionId: "womens", timeSlot: 2, fieldIndex: 1, homeTeamId: "p", awayTeamId: "q" }),
+      m({ id: "c", competitionId: "mens",   timeSlot: 1, fieldIndex: 0, homeTeamId: "r", awayTeamId: "s" }),
+    ];
+    const next = applyChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
+    const a = next.find((n) => n.id === "a")!;
+    const b = next.find((n) => n.id === "b")!;
+    const c = next.find((n) => n.id === "c")!;
+    expect(a).toMatchObject({ timeSlot: 2, fieldIndex: 1, competitionId: "mens" });
+    expect(b).toMatchObject({ timeSlot: 0, fieldIndex: 0, competitionId: "womens" });
+    expect(c).toMatchObject({ timeSlot: 1, fieldIndex: 0, competitionId: "mens" });
+  });
+
+  it("correctly targets the right match when ids collide across competitions", () => {
+    const matches = [
+      m({ id: "ko-1", competitionId: "mens",   timeSlot: 3, fieldIndex: 0,
+          homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      m({ id: "ko-1", competitionId: "womens", timeSlot: 5, fieldIndex: 1,
+          homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const next = applyChange(matches, {
+      kind: "swap",
+      matchAId: "ko-1",
+      matchACompetitionId: "mens",
+      matchBId: "ko-1",
+      matchBCompetitionId: "womens",
+    });
+    const mens = next.find((n) => n.id === "ko-1" && n.competitionId === "mens")!;
+    const womens = next.find((n) => n.id === "ko-1" && n.competitionId === "womens")!;
+    expect(mens).toMatchObject({ timeSlot: 5, fieldIndex: 1 });
+    expect(womens).toMatchObject({ timeSlot: 3, fieldIndex: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cross-competition swap — validateChange matrix
+// ---------------------------------------------------------------------------
+
+describe("validateChange — cross-competition swap", () => {
+  function mens(partial: Partial<ScheduledMatch>): ScheduledMatch {
+    return m({ competitionId: "mens", ...partial });
+  }
+  function womens(partial: Partial<ScheduledMatch>): ScheduledMatch {
+    return m({ competitionId: "womens", ...partial });
+  }
+
+  it("accepts a clean cross-competition swap (no conflicts on either side)", () => {
+    const matches = [
+      mens({ id: "a", timeSlot: 0, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "my" }),
+      womens({ id: "b", timeSlot: 2, fieldIndex: 1, homeTeamId: "wp", awayTeamId: "wq" }),
+    ];
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects when either side of the swap has already been played", () => {
+    const matches = [
+      mens({ id: "a", timeSlot: 0, fieldIndex: 0, score: { home: 1, away: 0 } }),
+      womens({ id: "b", timeSlot: 2, fieldIndex: 1, homeTeamId: "wp", awayTeamId: "wq" }),
+    ];
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("played");
+  });
+
+  it("rejects when the post-swap destination slot creates a same-competition team conflict", () => {
+    // mens a (mx, my) currently at slot 0; swap with womens b at slot 2.
+    // mens c already at slot 2 field 0 has team `mx` — after swap, mens a lands at slot 2 alongside c → team mx doubled.
+    const matches = [
+      mens({ id: "a", timeSlot: 0, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "my" }),
+      mens({ id: "c", timeSlot: 2, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "mz" }),
+      womens({ id: "b", timeSlot: 2, fieldIndex: 1, homeTeamId: "wp", awayTeamId: "wq" }),
+    ];
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("team-conflict");
+  });
+
+  it("rejects when the swap violates round-order on the mens side", () => {
+    // mens qf1 at slot 0, mens sf1 at slot 2 (required: qf1 < sf1).
+    // Swap mens qf1 ↔ womens b (at slot 3) → mens qf1 lands at slot 3, AFTER sf1 at slot 2. Violation.
+    const matches = [
+      mens({ id: "qf1", phase: "knockout", timeSlot: 0, fieldIndex: 0,
+             homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      mens({ id: "sf1", phase: "knockout", timeSlot: 2, fieldIndex: 0,
+             homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      womens({ id: "b", timeSlot: 3, fieldIndex: 1,
+               homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const res = validateChange(
+      matches,
+      {
+        kind: "swap",
+        matchAId: "qf1",
+        matchACompetitionId: "mens",
+        matchBId: "b",
+        matchBCompetitionId: "womens",
+      },
+      {
+        rounds: [
+          { name: "QF", matchIds: ["qf1"], isThirdPlace: false, competitionId: "mens" },
+          { name: "SF", matchIds: ["sf1"], isThirdPlace: false, competitionId: "mens" },
+        ],
+      }
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("round-order");
+  });
+
+  it("rejects when the swap violates round-order on the womens side", () => {
+    // womens qf1 at slot 0, womens sf1 at slot 2.
+    // Swap mens a (at slot 4) ↔ womens qf1 → womens qf1 lands at slot 4, AFTER sf1. Violation.
+    const matches = [
+      mens({ id: "a", timeSlot: 4, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "my" }),
+      womens({ id: "qf1", phase: "knockout", timeSlot: 0, fieldIndex: 1,
+               homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      womens({ id: "sf1", phase: "knockout", timeSlot: 2, fieldIndex: 1,
+               homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const res = validateChange(
+      matches,
+      {
+        kind: "swap",
+        matchAId: "a",
+        matchACompetitionId: "mens",
+        matchBId: "qf1",
+        matchBCompetitionId: "womens",
+      },
+      {
+        rounds: [
+          { name: "QF", matchIds: ["qf1"], isThirdPlace: false, competitionId: "womens" },
+          { name: "SF", matchIds: ["sf1"], isThirdPlace: false, competitionId: "womens" },
+        ],
+      }
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("round-order");
+  });
+
+  it("rejects when the swap violates phase-order on the mens side", () => {
+    // mens group g1 at slot 0; mens ko k1 at slot 3 (group < ko required).
+    // Swap mens g1 ↔ womens b at slot 4 → mens g1 at slot 4, mens ko k1 at slot 3. group(4) >= ko(3). Violation.
+    const matches = [
+      mens({ id: "g1", phase: "group", timeSlot: 0, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "my" }),
+      mens({ id: "k1", phase: "knockout", timeSlot: 3, fieldIndex: 0,
+             homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      womens({ id: "b", timeSlot: 4, fieldIndex: 1, homeTeamId: "wp", awayTeamId: "wq" }),
+    ];
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "g1",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("phase-order");
+  });
+
+  it("rejects when the swap violates phase-order on the womens side", () => {
+    // womens group g1 at slot 4; womens ko k1 at slot 5.
+    // Swap mens a at slot 6 ↔ womens k1 → womens k1 at slot 6 (fine) — no violation this way.
+    // Better: womens g1 at slot 2, womens k1 at slot 5. Swap mens a (slot 6) ↔ womens g1 → womens g1 at slot 6, k1 at slot 5 → group(6) >= ko(5). Violation.
+    const matches = [
+      mens({ id: "a", timeSlot: 6, fieldIndex: 0, homeTeamId: "mx", awayTeamId: "my" }),
+      womens({ id: "g1", phase: "group", timeSlot: 2, fieldIndex: 1, homeTeamId: "wp", awayTeamId: "wq" }),
+      womens({ id: "k1", phase: "knockout", timeSlot: 5, fieldIndex: 1,
+               homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "g1",
+      matchBCompetitionId: "womens",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("phase-order");
+  });
+
+  it("accepts a knockout tier-parity swap across competitions when no other conflicts", () => {
+    // Both competitions have a tier-0 ko match — swap them freely.
+    const matches = [
+      mens({ id: "ko-1", phase: "knockout", timeSlot: 3, fieldIndex: 0,
+             homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+      womens({ id: "ko-1", phase: "knockout", timeSlot: 4, fieldIndex: 1,
+               homeTeamId: null as unknown as string, awayTeamId: null as unknown as string }),
+    ];
+    const res = validateChange(
+      matches,
+      {
+        kind: "swap",
+        matchAId: "ko-1",
+        matchACompetitionId: "mens",
+        matchBId: "ko-1",
+        matchBCompetitionId: "womens",
+      },
+      {
+        rounds: [
+          { name: "Finale", matchIds: ["ko-1"], isThirdPlace: false, competitionId: "mens" },
+          { name: "Finale", matchIds: ["ko-1"], isThirdPlace: false, competitionId: "womens" },
+        ],
+      }
+    );
+    expect(res.ok).toBe(true);
+  });
+});

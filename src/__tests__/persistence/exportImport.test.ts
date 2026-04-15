@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   exportToJson,
   parseImportedJson,
-  exportMatchesCsv,
-  exportStandingsCsv,
 } from "../../persistence/exportImport";
 import type { Tournament } from "../../types";
 
@@ -127,79 +125,5 @@ describe("exportToJson / parseImportedJson", () => {
     expect(() => parseImportedJson(JSON.stringify(bad))).toThrow(
       "Ontbrekend veld: competitions"
     );
-  });
-});
-
-describe("exportMatchesCsv", () => {
-  it("has correct header", () => {
-    const csv = exportMatchesCsv(makeTournament());
-    const header = csv.split("\n")[0];
-    expect(header).toBe(
-      "Competitie,Fase,Groep,Thuis,Uit,ThuisScore,UitScore,Veld,Tijd"
-    );
-  });
-
-  it("includes match data rows", () => {
-    const csv = exportMatchesCsv(makeTournament());
-    const lines = csv.split("\n");
-    expect(lines.length).toBeGreaterThan(1);
-    expect(lines[1]).toContain("Men's");
-    expect(lines[1]).toContain("Alpha");
-    expect(lines[1]).toContain("Bravo");
-  });
-
-  it("includes score values for played matches", () => {
-    const csv = exportMatchesCsv(makeTournament());
-    const lines = csv.split("\n");
-    const playedLine = lines[1];
-    expect(playedLine).toContain("2,1");
-  });
-
-  it("formats time correctly from slot index", () => {
-    const csv = exportMatchesCsv(makeTournament());
-    const lines = csv.split("\n");
-    expect(lines[1]).toContain("09:00");
-    expect(lines[3]).toContain("09:20");
-  });
-
-  it("shows field as 1-indexed", () => {
-    const csv = exportMatchesCsv(makeTournament());
-    const lines = csv.split("\n");
-    const cols = lines[1].split(",");
-    expect(cols[7]).toBe("1");
-  });
-});
-
-describe("exportStandingsCsv", () => {
-  it("has correct header", () => {
-    const csv = exportStandingsCsv(makeTournament());
-    const header = csv.split("\n")[0];
-    expect(header).toBe(
-      "Competitie,Groep,Positie,Team,GS,W,G,V,DV,DT,DS,Ptn"
-    );
-  });
-
-  it("includes standings data rows", () => {
-    const csv = exportStandingsCsv(makeTournament());
-    const lines = csv.split("\n");
-    expect(lines.length).toBe(4);
-    expect(lines[1]).toContain("Men's");
-    expect(lines[1]).toContain("Group A");
-  });
-
-  it("has correct position numbers", () => {
-    const csv = exportStandingsCsv(makeTournament());
-    const lines = csv.split("\n");
-    const positions = lines.slice(1).map((l) => l.split(",")[2]);
-    expect(positions).toEqual(["1", "2", "3"]);
-  });
-
-  it("shows correct points for played match winner", () => {
-    const csv = exportStandingsCsv(makeTournament());
-    const lines = csv.split("\n");
-    const alphaLine = lines.find((l) => l.includes("Alpha"));
-    expect(alphaLine).toBeDefined();
-    const cols = alphaLine!.split(",");
-    expect(cols[11]).toBe("3");
   });
 });

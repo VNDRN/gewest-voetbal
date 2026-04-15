@@ -222,12 +222,14 @@ function OverlayCard({
   );
 }
 
-function cellStateClass(cls: TargetClass | undefined): string {
+function cellStateClass(cls: TargetClass | undefined, isHovered: boolean): string {
   switch (cls) {
     case "valid-move":
-      return "rounded-md border border-dashed border-ink/40 bg-ink/5";
+      return isHovered ? "rounded-md" : "rounded-md bg-ink/5";
     case "valid-swap":
-      return "ring-2 ring-ink/50 rounded-md bg-blue-50";
+      return isHovered
+        ? "ring-2 ring-ink/50 rounded-md bg-blue-50"
+        : "rounded-md outline outline-1 outline-ink/20 bg-blue-50/40";
     case "invalid":
       return "rounded-md border border-dashed border-brand/45 bg-brand/5 opacity-60";
     default:
@@ -458,7 +460,7 @@ export default function ScheduleGrid({
                           ? fullGrid.get(cellKey)
                           : undefined;
                       const cls = activeId ? targetMap.get(cellId) : undefined;
-                      const stateCls = cellStateClass(cls);
+                      const stateCls = cellStateClass(cls, overId === cellId);
                       const isSource = activeId && match?.id === activeId && match?.competitionId === activeMatch?.competitionId;
 
                       if (!match && hiddenMatch) {

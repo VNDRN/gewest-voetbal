@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -24,6 +24,7 @@ import { ActionChip, type ActionChipKind } from "./ActionChip";
 import { GhostCard } from "./GhostCard";
 import { MatchCardContent } from "./MatchCardContent";
 import { previewKindFor } from "../engine/schedulePreview";
+import { computeMovers, applyFlip, type Mover } from "../engine/scheduleFlip";
 
 export type MatchPillVariant = "heren" | "dames";
 
@@ -79,6 +80,14 @@ function scheduleDragRootRectBeforeLayout(event: DragStartEvent): {
   const br = root.getBoundingClientRect();
   return { top: br.top, left: br.left };
 }
+
+const FLIP_DURATION_MS = 250;
+const FLIP_EASING = "ease";
+
+type PendingFlip = {
+  movers: Mover[];
+  oldRects: Map<string, DOMRect>;
+};
 
 function DraggableCard({
   id,
@@ -331,6 +340,7 @@ export default function ScheduleGrid({
   const [activeCompetitionId, setActiveCompetitionId] = useState<string | null>(null);
   const [targetMap, setTargetMap] = useState<Map<string, TargetClass>>(new Map());
   const [overId, setOverId] = useState<string | null>(null);
+  const [pendingFlip, setPendingFlip] = useState<PendingFlip | null>(null);
 
   // Pre-insert-strip position: sync DOM measure in onDragStart, else dnd-kit rect, else modifier fallback.
   const initialDraggingRectRef = useRef<{ top: number; left: number } | null>(null);
@@ -382,6 +392,19 @@ export default function ScheduleGrid({
     };
   }, [activeId]);
 
+  useLayoutEffect(() => {
+    if (!pendingFlip) return;
+    applyFlip(
+      pendingFlip.movers,
+      pendingFlip.oldRects,
+      matchRefs.current,
+      FLIP_DURATION_MS,
+      FLIP_EASING
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingFlip(null);
+  }, [pendingFlip]);
+
   function handleDragStart(event: DragStartEvent) {
     // Draggable id is `${competitionId}:${matchId}` — parse to avoid dnd-kit id-map collisions
     // when both competitions share the same match id (e.g. ko-1).
@@ -411,17 +434,29 @@ export default function ScheduleGrid({
     const colonIdx = compositeId.indexOf(":");
     const compId = colonIdx >= 0 ? compositeId.slice(0, colonIdx) : undefined;
     const matchId = colonIdx >= 0 ? compositeId.slice(colonIdx + 1) : compositeId;
+
+    let nextPendingFlip: PendingFlip | null = null;
+    if (over) {
+      const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
+      const cls = targetMap.get(String(over.id));
+      if (change && cls !== "invalid") {
+        const movers = computeMovers(change, allMatches);
+        const oldRects = new Map<string, DOMRect>();
+        for (const { key } of movers) {
+          const el = matchRefs.current.get(key);
+          if (el) oldRects.set(key, el.getBoundingClientRect());
+        }
+        nextPendingFlip = { movers, oldRects };
+        onApplyChange(change);
+      }
+    }
+
     setActiveId(null);
     setActiveCompetitionId(null);
     setTargetMap(new Map());
     setOverId(null);
     initialDraggingRectRef.current = null;
-    if (!over) return;
-    const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
-    if (!change) return;
-    const cls = targetMap.get(String(over.id));
-    if (cls === "invalid") return;
-    onApplyChange(change);
+    setPendingFlip(nextPendingFlip);
   }
 
   function handleDragCancel() {

@@ -4,8 +4,6 @@ import {
   exportToJson,
   parseImportedJson,
   downloadFile,
-  exportMatchesCsv,
-  exportStandingsCsv,
 } from "../persistence/exportImport";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { clearState } from "../persistence/localStorage";
@@ -30,19 +28,12 @@ export default function Layout() {
     ? helpContent[location.pathname]
     : undefined;
 
-  function handleExportJson() {
+  function handleSave() {
     const json = exportToJson(tournament);
     downloadFile(json, `${tournament.name}.json`, "application/json");
   }
 
-  function handleExportCsv() {
-    const matchesCsv = exportMatchesCsv(tournament);
-    downloadFile(matchesCsv, `${tournament.name}-matches.csv`, "text/csv");
-    const standingsCsv = exportStandingsCsv(tournament);
-    downloadFile(standingsCsv, `${tournament.name}-standings.csv`, "text/csv");
-  }
-
-  function handleImport() {
+  function handleLoad() {
     fileInputRef.current?.click();
   }
 
@@ -69,8 +60,8 @@ export default function Layout() {
     navigate("/setup");
   }
 
-  function handleExportAndClose() {
-    handleExportJson();
+  function handleSaveAndClose() {
+    handleSave();
     setShowResetModal(false);
   }
 
@@ -101,22 +92,46 @@ export default function Layout() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleExportJson}
-              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+              onClick={handleSave}
+              className="flex items-center gap-2 rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
             >
-              Exporteer JSON
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M12 4v12" />
+                <path d="M7 11l5 5 5-5" />
+                <path d="M5 20h14" />
+              </svg>
+              Opslaan
             </button>
             <button
-              onClick={handleExportCsv}
-              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+              onClick={handleLoad}
+              className="flex items-center gap-2 rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
             >
-              Exporteer CSV
-            </button>
-            <button
-              onClick={handleImport}
-              className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
-            >
-              Importeer
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M12 20V8" />
+                <path d="M7 13l5-5 5 5" />
+                <path d="M5 4h14" />
+              </svg>
+              Laden
             </button>
             <input
               ref={fileInputRef}
@@ -183,10 +198,10 @@ export default function Layout() {
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={handleExportAndClose}
+                onClick={handleSaveAndClose}
                 className="rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
               >
-                Exporteer eerst
+                Sla eerst op
               </button>
               <button
                 onClick={handleReset}

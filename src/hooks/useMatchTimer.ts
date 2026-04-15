@@ -44,11 +44,12 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
   }, [state.status]);
 
   const start = useCallback(() => {
+    const ts = Date.now();
     setState((s) => {
       if (s.status !== "idle") return s;
-      return { status: "running", durationSeconds: s.durationSeconds, startedAt: Date.now() };
+      return { status: "running", durationSeconds: s.durationSeconds, startedAt: ts };
     });
-    setNow(Date.now());
+    setNow(ts);
   }, []);
 
   const pause = useCallback(() => {
@@ -60,12 +61,13 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
   }, []);
 
   const resume = useCallback(() => {
+    const ts = Date.now();
     setState((s) => {
       if (s.status !== "paused") return s;
-      const startedAt = Date.now() - (s.durationSeconds - s.remainingSeconds) * 1000;
+      const startedAt = ts - (s.durationSeconds - s.remainingSeconds) * 1000;
       return { status: "running", durationSeconds: s.durationSeconds, startedAt };
     });
-    setNow(Date.now());
+    setNow(ts);
   }, []);
 
   const remainingSeconds = computeRemaining(state, now);

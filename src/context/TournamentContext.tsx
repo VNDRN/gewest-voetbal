@@ -365,8 +365,34 @@ export function tournamentReducer(
       };
     }
 
-    case "REMOVE_SLOT":
-      return state;
+    case "REMOVE_SLOT": {
+      const slot = action.slot;
+      const { flat } = flattenMatches(state);
+      const occupied = flat.some((mm) => mm.timeSlot === slot);
+      if (occupied) return state;
+      const shiftMatch = <T extends { timeSlot: number }>(mm: T): T =>
+        mm.timeSlot > slot ? { ...mm, timeSlot: mm.timeSlot - 1 } : mm;
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          slotCount: state.config.slotCount - 1,
+          breaks: state.config.breaks.map((b) =>
+            b.afterTimeSlot > slot
+              ? { ...b, afterTimeSlot: b.afterTimeSlot - 1 }
+              : b
+          ),
+        },
+        competitions: state.competitions.map((c) => ({
+          ...c,
+          groups: c.groups.map((g) => ({ ...g, matches: g.matches.map(shiftMatch) })),
+          knockoutRounds: c.knockoutRounds.map((r) => ({
+            ...r,
+            matches: r.matches.map(shiftMatch),
+          })),
+        })) as [Competition, Competition],
+      };
+    }
 
     case "RESET":
       return createDefaultTournament();

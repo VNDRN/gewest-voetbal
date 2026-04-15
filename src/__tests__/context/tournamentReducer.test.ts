@@ -85,3 +85,45 @@ describe("ADD_SLOT", () => {
     expect(next.config.breaks.find((b) => b.id === "br1")!.afterTimeSlot).toBe(2);
   });
 });
+
+describe("REMOVE_SLOT", () => {
+  it("removes an empty slot, shifts later matches up by 1, decrements slotCount", () => {
+    // Fixture has matches at slots 0,1,2. Add an empty slot at 1 (matches shift to 0,2,3), then remove slot 1.
+    const base = makeTournament();
+    const withEmpty = tournamentReducer(base, { type: "ADD_SLOT", atSlot: 1 });
+    // Sanity: slotCount 4, matches at 0, 2, 3
+    expect(withEmpty.config.slotCount).toBe(4);
+
+    const next = tournamentReducer(withEmpty, { type: "REMOVE_SLOT", slot: 1 });
+    const matches = next.competitions[0].groups[0].matches;
+    expect(next.config.slotCount).toBe(3);
+    expect(matches.find((m) => m.id === "m0")!.timeSlot).toBe(0);
+    expect(matches.find((m) => m.id === "m1")!.timeSlot).toBe(1);
+    expect(matches.find((m) => m.id === "m2")!.timeSlot).toBe(2);
+  });
+
+  it("no-ops when the target slot is occupied", () => {
+    const t = makeTournament();
+    const next = tournamentReducer(t, { type: "REMOVE_SLOT", slot: 1 });
+    expect(next).toBe(t);
+  });
+
+  it("shifts breaks with afterTimeSlot > slot, keeps breaks anchored at slot, decrements slotCount", () => {
+    const base = makeTournament();
+    base.config.slotCount = 5;
+    // Add empty slot at 2 so we can remove it
+    base.competitions[0].groups[0].matches = base.competitions[0].groups[0].matches.map((mm) =>
+      mm.timeSlot >= 2 ? { ...mm, timeSlot: mm.timeSlot + 1 } : mm
+    );
+    base.config.breaks = [
+      { id: "br-a", afterTimeSlot: 0, durationMinutes: 10 }, // before removed — unchanged
+      { id: "br-b", afterTimeSlot: 2, durationMinutes: 5 },  // anchored at removed slot — stays
+      { id: "br-c", afterTimeSlot: 3, durationMinutes: 7 },  // after — shifts down to 2
+    ];
+    const next = tournamentReducer(base, { type: "REMOVE_SLOT", slot: 2 });
+    expect(next.config.slotCount).toBe(4);
+    expect(next.config.breaks.find((b) => b.id === "br-a")!.afterTimeSlot).toBe(0);
+    expect(next.config.breaks.find((b) => b.id === "br-b")!.afterTimeSlot).toBe(2);
+    expect(next.config.breaks.find((b) => b.id === "br-c")!.afterTimeSlot).toBe(2);
+  });
+});

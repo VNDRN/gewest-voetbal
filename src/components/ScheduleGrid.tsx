@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -20,6 +20,11 @@ import {
 } from "../engine/scheduleMove";
 import { formatTime } from "../engine/time";
 import type { ScheduleBreak, ScheduledMatch } from "../types";
+import { ActionChip, type ActionChipKind } from "./ActionChip";
+import { GhostCard } from "./GhostCard";
+import { MatchCardContent } from "./MatchCardContent";
+import { previewKindFor } from "../engine/schedulePreview";
+import { computeMovers, applyFlip, type Mover } from "../engine/scheduleFlip";
 
 export type MatchPillVariant = "heren" | "dames";
 
@@ -76,15 +81,25 @@ function scheduleDragRootRectBeforeLayout(event: DragStartEvent): {
   return { top: br.top, left: br.left };
 }
 
+const FLIP_DURATION_MS = 250;
+const FLIP_EASING = "ease";
+
+type PendingFlip = {
+  movers: Mover[];
+  oldRects: Map<string, DOMRect>;
+};
+
 function DraggableCard({
   id,
   data,
   canDrag,
+  refCallback,
   children,
 }: {
   id: string;
   data?: Record<string, unknown>;
   canDrag: boolean;
+  refCallback?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -93,9 +108,13 @@ function DraggableCard({
     disabled: !canDrag,
   });
   const cls = canDrag ? "cursor-grab [&_button]:cursor-grab" : "";
+  const setRefs = (el: HTMLElement | null) => {
+    setNodeRef(el);
+    refCallback?.(el);
+  };
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       data-schedule-drag-root=""
       className={cls}
       {...attributes}
@@ -123,12 +142,26 @@ function DroppableCell({
   );
 }
 
+function parseAtSlotFromInsertId(id: string | null): number | null {
+  if (!id) return null;
+  let rest: string;
+  if (id.startsWith("insert-pre-")) rest = id.slice("insert-pre-".length);
+  else if (id.startsWith("insert-")) rest = id.slice("insert-".length);
+  else return null;
+  const parts = rest.split("-");
+  if (parts.length !== 2) return null;
+  const n = Number(parts[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
 function InsertStrip({
   atSlot,
   fieldCount,
   targetMap,
   overId,
   active,
+  activeMatch,
+  teamNames,
   idPrefix = "insert",
 }: {
   atSlot: number;
@@ -136,13 +169,22 @@ function InsertStrip({
   targetMap: Map<string, TargetClass>;
   overId: string | null;
   active: boolean;
+  activeMatch: ScheduledMatch | null;
+  teamNames: Map<string, string>;
   idPrefix?: "insert" | "insert-pre";
 }) {
   if (!active) return null;
+  const hoveredAtSlot = parseAtSlotFromInsertId(overId);
+  const overIsPre = overId?.startsWith("insert-pre-") ?? false;
+  const rowIsPre = idPrefix === "insert-pre";
+  const rowHovered =
+    overId != null &&
+    hoveredAtSlot === atSlot &&
+    overIsPre === rowIsPre;
   const fields = Array.from({ length: fieldCount }, (_, f) => f);
   return (
     <tr>
-      <td className="border-0 p-0 text-right pr-2">
+      <td className="border-0 p-0 text-right pr-2 align-middle">
         <span className="font-display text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink/55">
           + Tijdslot
         </span>
@@ -153,14 +195,16 @@ function InsertStrip({
         const isInvalid = cls === "invalid";
         const isValid = cls === "valid-insert";
         const isOver = overId === id;
-        const base = "border-0 p-1";
         return (
-          <td key={f} className={base}>
+          <td key={f} className="border-0 p-1">
             <InsertSlot
               id={id}
               invalid={isInvalid}
               valid={isValid}
               hovered={isOver}
+              rowHovered={rowHovered}
+              activeMatch={activeMatch}
+              teamNames={teamNames}
             />
           </td>
         );
@@ -174,67 +218,35 @@ function InsertSlot({
   invalid,
   valid,
   hovered,
+  rowHovered,
+  activeMatch,
+  teamNames,
 }: {
   id: string;
   invalid: boolean;
   valid: boolean;
   hovered: boolean;
+  rowHovered: boolean;
+  activeMatch: ScheduledMatch | null;
+  teamNames: Map<string, string>;
 }) {
   const { setNodeRef } = useDroppable({ id });
-  let cls =
-    "rounded-md border-2 border-dashed transition-all ";
-  if (hovered && valid) {
-    cls += "h-20 bg-ink/10 border-ink flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink";
-  } else if (hovered && invalid) {
-    cls += "h-20 bg-brand/10 border-brand flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand";
+
+  let cls = "rounded-md border-2 border-dashed transition-all relative ";
+  if (rowHovered && invalid) {
+    cls += "min-h-[96px] bg-brand/10 border-brand";
+  } else if (rowHovered && valid) {
+    cls += "min-h-[96px] bg-ink/10 border-ink";
   } else if (invalid) {
     cls += "h-5 bg-brand/5 border-brand/45";
   } else {
     cls += "h-5 bg-ink/5 border-ink/40";
   }
+
   return (
     <div ref={setNodeRef} className={cls}>
-      {hovered && valid && "+ Nieuw tijdslot"}
-      {hovered && invalid && "× Niet toegestaan"}
-    </div>
-  );
-}
-
-function ActionChip({ kind }: { kind: "move" | "swap" | "insert" | "reject" }) {
-  const bg = kind === "reject" ? "bg-brand" : "bg-ink";
-  return (
-    <div
-      className={`absolute -top-3 -right-3 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-card ${bg}`}
-      style={{ transform: "rotate(2.5deg)" }}
-    >
-      {kind === "move" && (
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-          <path fill="currentColor" d="M10 2 L14 2 L14 10 L17.5 10 L12 16 L6.5 10 L10 10 Z" />
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 13 V19 A2 2 0 0 0 6 21 H18 A2 2 0 0 0 20 19 V13"
-          />
-        </svg>
-      )}
-      {kind === "swap" && (
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M7 7h11M14 3l4 4-4 4" />
-          <path d="M17 17H6M10 21l-4-4 4-4" />
-        </svg>
-      )}
-      {kind === "insert" && (
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      )}
-      {kind === "reject" && (
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+      {rowHovered && hovered && valid && activeMatch && (
+        <GhostCard match={activeMatch} teamNames={teamNames} chipKind="insert" />
       )}
     </div>
   );
@@ -247,54 +259,27 @@ function OverlayCard({
 }: {
   match: ScheduledMatch;
   teamNames: Map<string, string>;
-  chip: "move" | "swap" | "insert" | "reject" | null;
+  chip: ActionChipKind | null;
 }) {
-  const meta = scheduledMatchMeta(match);
-  const pillClass =
-    meta.pillVariant === "dames"
-      ? "bg-brand/8 text-brand"
-      : "bg-ink/15 text-ink";
-  const homeName = match.homeTeamId
-    ? (teamNames.get(match.homeTeamId) ?? "?")
-    : (match.homeSourceDescription ?? "TBD");
-  const awayName = match.awayTeamId
-    ? (teamNames.get(match.awayTeamId) ?? "?")
-    : (match.awaySourceDescription ?? "TBD");
   return (
     <div
-      className="relative w-[280px] rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
-      style={{ transform: "rotate(-2.5deg)" }}
+      className="relative flex w-[280px] flex-col gap-4 rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
+      style={{ transform: "rotate(-2.5deg) scale(0.92)" }}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}>
-          {meta.pillLabel}
-        </span>
-        <span className="text-[11px] font-medium text-ink-muted">
-          {meta.rightEyebrow}
-        </span>
-      </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="truncate text-right text-[16px] font-semibold text-ink">
-          {homeName}
-        </span>
-        <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
-          VS
-        </span>
-        <span className="truncate text-left text-[16px] font-semibold text-ink">
-          {awayName}
-        </span>
-      </div>
+      <MatchCardContent match={match} teamNames={teamNames} showScore={false} />
       {chip && <ActionChip kind={chip} />}
     </div>
   );
 }
 
-function cellStateClass(cls: TargetClass | undefined): string {
+function cellStateClass(cls: TargetClass | undefined, isHovered: boolean): string {
   switch (cls) {
     case "valid-move":
-      return "rounded-md border border-dashed border-ink/40 bg-ink/5";
+      return isHovered ? "rounded-md" : "rounded-md bg-ink/5";
     case "valid-swap":
-      return "ring-2 ring-ink/50 rounded-md bg-blue-50";
+      return isHovered
+        ? "ring-2 ring-ink/50 rounded-md bg-blue-50"
+        : "rounded-md outline outline-1 outline-ink/20 bg-blue-50/40";
     case "invalid":
       return "rounded-md border border-dashed border-brand/45 bg-brand/5 opacity-60";
     default:
@@ -355,9 +340,15 @@ export default function ScheduleGrid({
   const [activeCompetitionId, setActiveCompetitionId] = useState<string | null>(null);
   const [targetMap, setTargetMap] = useState<Map<string, TargetClass>>(new Map());
   const [overId, setOverId] = useState<string | null>(null);
+  const [pendingFlip, setPendingFlip] = useState<PendingFlip | null>(null);
 
   // Pre-insert-strip position: sync DOM measure in onDragStart, else dnd-kit rect, else modifier fallback.
   const initialDraggingRectRef = useRef<{ top: number; left: number } | null>(null);
+  const matchRefs = useRef(new Map<string, HTMLElement>());
+  const registerMatchRef = useCallback((key: string, el: HTMLElement | null) => {
+    if (el) matchRefs.current.set(key, el);
+    else matchRefs.current.delete(key);
+  }, []);
 
   // Compensates when the source cell moves (insert strips, hover heights, scroll). Baseline should
   // be pre-insert-strip via `scheduleDragRootRectBeforeLayout`; if missing, first `activeNodeRect`.
@@ -401,7 +392,31 @@ export default function ScheduleGrid({
     };
   }, [activeId]);
 
+  useLayoutEffect(() => {
+    if (!pendingFlip) return;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingFlip(null);
+      return;
+    }
+    applyFlip(
+      pendingFlip.movers,
+      pendingFlip.oldRects,
+      matchRefs.current,
+      FLIP_DURATION_MS,
+      FLIP_EASING
+    );
+    setPendingFlip(null);
+  }, [pendingFlip]);
+
   function handleDragStart(event: DragStartEvent) {
+    for (const el of matchRefs.current.values()) {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
     // Draggable id is `${competitionId}:${matchId}` — parse to avoid dnd-kit id-map collisions
     // when both competitions share the same match id (e.g. ko-1).
     const compositeId = event.active.id as string;
@@ -430,17 +445,29 @@ export default function ScheduleGrid({
     const colonIdx = compositeId.indexOf(":");
     const compId = colonIdx >= 0 ? compositeId.slice(0, colonIdx) : undefined;
     const matchId = colonIdx >= 0 ? compositeId.slice(colonIdx + 1) : compositeId;
+
+    let nextPendingFlip: PendingFlip | null = null;
+    if (over) {
+      const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
+      const cls = targetMap.get(String(over.id));
+      if (change && cls !== "invalid") {
+        const movers = computeMovers(change, allMatches);
+        const oldRects = new Map<string, DOMRect>();
+        for (const { key } of movers) {
+          const el = matchRefs.current.get(key);
+          if (el) oldRects.set(key, el.getBoundingClientRect());
+        }
+        nextPendingFlip = { movers, oldRects };
+        onApplyChange(change);
+      }
+    }
+
     setActiveId(null);
     setActiveCompetitionId(null);
     setTargetMap(new Map());
     setOverId(null);
     initialDraggingRectRef.current = null;
-    if (!over) return;
-    const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
-    if (!change) return;
-    const cls = targetMap.get(String(over.id));
-    if (cls === "invalid") return;
-    onApplyChange(change);
+    setPendingFlip(nextPendingFlip);
   }
 
   function handleDragCancel() {
@@ -454,7 +481,7 @@ export default function ScheduleGrid({
   function chipFor(
     ovId: string | null,
     map: Map<string, TargetClass>
-  ): "move" | "swap" | "insert" | "reject" | null {
+  ): ActionChipKind | null {
     if (!ovId) return null;
     const cls = map.get(ovId);
     if (cls === "invalid") return "reject";
@@ -510,6 +537,8 @@ export default function ScheduleGrid({
                       targetMap={targetMap}
                       overId={overId}
                       active={!!activeId}
+                      activeMatch={activeMatch}
+                      teamNames={teamNames}
                     />
                   )}
                   <tr>
@@ -525,8 +554,11 @@ export default function ScheduleGrid({
                           ? fullGrid.get(cellKey)
                           : undefined;
                       const cls = activeId ? targetMap.get(cellId) : undefined;
-                      const stateCls = cellStateClass(cls);
+                      const stateCls = cellStateClass(cls, overId === cellId);
                       const isSource = activeId && match?.id === activeId && match?.competitionId === activeMatch?.competitionId;
+                      const preview = activeMatch
+                        ? previewKindFor(cellId, activeMatch, overId, targetMap, allMatches)
+                        : { kind: "default" as const };
 
                       if (!match && hiddenMatch) {
                         return (
@@ -544,40 +576,37 @@ export default function ScheduleGrid({
                         );
                       }
 
+                      if (preview.kind === "source-partner-ghost") {
+                        return (
+                          <td key={field} className="border border-card-hair p-1">
+                            <DroppableCell id={cellId} className="">
+                              <GhostCard match={preview.match} teamNames={teamNames} />
+                            </DroppableCell>
+                          </td>
+                        );
+                      }
+
                       if (!match) {
                         return (
                           <td key={field} className="border border-card-hair p-1">
-                            <DroppableCell
-                              id={cellId}
-                              className={`min-h-[96px] ${stateCls}`}
-                            >
-                              {cls === "valid-move" && activeId && (
-                                <div className="flex h-full min-h-[96px] items-center justify-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink/60">
-                                  Laat hier vallen
-                                </div>
+                            <DroppableCell id={cellId} className={`min-h-[96px] ${stateCls}`}>
+                              {preview.kind === "target-self-ghost" && (
+                                <GhostCard
+                                  match={preview.match}
+                                  teamNames={teamNames}
+                                  chipKind="move"
+                                />
                               )}
                             </DroppableCell>
                           </td>
                         );
                       }
 
-                      const meta = scheduledMatchMeta(match);
                       const isKnockout = match.phase === "knockout";
-                      const homeName = match.homeTeamId
-                        ? (teamNames.get(match.homeTeamId) ?? "?")
-                        : (match.homeSourceDescription ?? "TBD");
-                      const awayName = match.awayTeamId
-                        ? (teamNames.get(match.awayTeamId) ?? "?")
-                        : (match.awaySourceDescription ?? "TBD");
                       const homeIsTbd = !match.homeTeamId;
                       const awayIsTbd = !match.awayTeamId;
                       const isTbdKnockout =
                         isKnockout && (homeIsTbd || awayIsTbd);
-
-                      const pillClass =
-                        meta.pillVariant === "dames"
-                          ? "bg-brand/8 text-brand"
-                          : "bg-ink/15 text-ink";
 
                       const cardClass = `flex w-full flex-col gap-4 rounded-lg border bg-card p-3 text-left transition-colors ${
                         isTbdKnockout
@@ -586,51 +615,7 @@ export default function ScheduleGrid({
                       } ${isSource ? "opacity-30 border-dashed border-ink/60" : ""}`;
 
                       const inner = (
-                        <>
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={`rounded px-1.5 py-0.5 font-display text-[11px] font-extrabold uppercase tracking-[0.14em] ${pillClass}`}
-                            >
-                              {meta.pillLabel}
-                            </span>
-                            <span className="text-[11px] font-medium text-ink-muted">
-                              {meta.rightEyebrow}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <span
-                              className={`truncate text-right text-[16px] ${
-                                homeIsTbd
-                                  ? "italic font-medium text-ink-muted"
-                                  : "font-semibold text-ink"
-                              }`}
-                            >
-                              {homeName}
-                            </span>
-                            {match.score ? (
-                              <span className="font-display text-[20px] font-black leading-none text-ink tabular-nums whitespace-nowrap">
-                                <span>{match.score.home}</span>
-                                <span className="mx-[3px] font-medium text-ink-muted">
-                                  –
-                                </span>
-                                <span>{match.score.away}</span>
-                              </span>
-                            ) : (
-                              <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
-                                VS
-                              </span>
-                            )}
-                            <span
-                              className={`truncate text-left text-[16px] ${
-                                awayIsTbd
-                                  ? "italic font-medium text-ink-muted"
-                                  : "font-semibold text-ink"
-                              }`}
-                            >
-                              {awayName}
-                            </span>
-                          </div>
-                        </>
+                        <MatchCardContent match={match} teamNames={teamNames} />
                       );
 
                       const canClick =
@@ -651,13 +636,24 @@ export default function ScheduleGrid({
                       return (
                         <td key={field} className="border border-card-hair p-1">
                           <DroppableCell id={cellId} className={stateCls}>
-                            <DraggableCard
-                              id={`${match.competitionId}:${match.id}`}
-                              data={{ competitionId: match.competitionId }}
-                              canDrag={canDrag}
-                            >
-                              {cardNode}
-                            </DraggableCard>
+                            {preview.kind === "target-self-ghost" && preview.hideOccupant ? (
+                              <GhostCard
+                                match={preview.match}
+                                teamNames={teamNames}
+                                chipKind="swap"
+                              />
+                            ) : (
+                              <DraggableCard
+                                id={`${match.competitionId}:${match.id}`}
+                                data={{ competitionId: match.competitionId }}
+                                canDrag={canDrag}
+                                refCallback={(el) =>
+                                  registerMatchRef(`${match.competitionId}:${match.id}`, el)
+                                }
+                              >
+                                {cardNode}
+                              </DraggableCard>
+                            )}
                           </DroppableCell>
                         </td>
                       );
@@ -671,6 +667,8 @@ export default function ScheduleGrid({
                         targetMap={targetMap}
                         overId={overId}
                         active={!!activeId}
+                        activeMatch={activeMatch}
+                        teamNames={teamNames}
                         idPrefix="insert-pre"
                       />
                       <tr>
@@ -718,6 +716,8 @@ export default function ScheduleGrid({
                         targetMap={targetMap}
                         overId={overId}
                         active={!!activeId}
+                        activeMatch={activeMatch}
+                        teamNames={teamNames}
                       />
                     </>
                   ) : activeId ? (
@@ -727,6 +727,8 @@ export default function ScheduleGrid({
                       targetMap={targetMap}
                       overId={overId}
                       active
+                      activeMatch={activeMatch}
+                      teamNames={teamNames}
                     />
                   ) : (
                     slotIdx < slots.length - 1 && (

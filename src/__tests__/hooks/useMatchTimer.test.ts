@@ -195,6 +195,24 @@ describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
     expect(result.current.durationSeconds).toBe(1200);
   });
 
+  it("editMinutes is a no-op while paused", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    act(() => {
+      result.current.pause();
+    });
+    act(() => {
+      result.current.editMinutes(5);
+    });
+    expect(result.current.status).toBe("paused");
+    expect(result.current.durationSeconds).toBe(1200);
+  });
+
   it("snoozeTwoMinutes from expired: durationSeconds unchanged, remaining = 120", () => {
     const { result } = renderHook(() => useMatchTimer(900));
     act(() => {

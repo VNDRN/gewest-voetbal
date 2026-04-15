@@ -20,6 +20,11 @@ export interface UseMatchTimerResult {
   dismissModal: () => void;
 }
 
+// `dismissed` is a UI flag, NOT part of TimerState (which gets persisted).
+// Convention: transitions that begin a fresh expiry cycle (tick→expired,
+// snooze, startNextSlot, reset) construct a fresh HookState with
+// `dismissed: false`. Transitions that don't change the dismissed lifecycle
+// (start, pause, resume, editMinutes) spread `...s` to preserve it.
 type HookState = { timer: TimerState; dismissed: boolean };
 
 function idleFromConfig(configSlotSeconds: number): TimerState {
@@ -107,7 +112,8 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     const ts = Date.now();
     setHookState((s) => {
       if (s.timer.status !== "expired") return s;
-      const startedAt = ts - (s.timer.durationSeconds - 120) * 1000;
+      const snoozeRemaining = Math.min(120, s.timer.durationSeconds);
+      const startedAt = ts - (s.timer.durationSeconds - snoozeRemaining) * 1000;
       return { timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt }, dismissed: false };
     });
     setNow(ts);

@@ -88,8 +88,9 @@ export type MoveChange = {
 export type SwapChange = {
   kind: "swap";
   matchAId: string;
+  matchACompetitionId: string;
   matchBId: string;
-  competitionId?: string;
+  matchBCompetitionId: string;
 };
 
 export type InsertChange = {
@@ -222,7 +223,13 @@ export function classifyTargets(
       }
       const res = validateChange(
         matches,
-        { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id, competitionId: active.competitionId },
+        {
+          kind: "swap",
+          matchAId: activeMatchId,
+          matchACompetitionId: active.competitionId,
+          matchBId: occupant.id,
+          matchBCompetitionId: occupant.competitionId,
+        },
         context
       );
       map.set(id, res.ok ? "valid-swap" : "invalid");
@@ -275,17 +282,24 @@ export function changeFromDragEnd(
     const active = matches.find(
       (m) => m.id === activeMatchId && (activeCompetitionId == null || m.competitionId === activeCompetitionId)
     );
-    if (active && active.timeSlot === slot && active.fieldIndex === field) {
+    if (!active) return null;
+    if (active.timeSlot === slot && active.fieldIndex === field) {
       return null;
     }
     const occupant = matches.find(
       (m) => m.timeSlot === slot && m.fieldIndex === field &&
-        (activeCompetitionId == null || m.competitionId === activeCompetitionId)
+        m.competitionId === active.competitionId
     );
     if (!occupant) {
       return { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field, competitionId: activeCompetitionId };
     }
-    return { kind: "swap", matchAId: activeMatchId, matchBId: occupant.id, competitionId: activeCompetitionId };
+    return {
+      kind: "swap",
+      matchAId: activeMatchId,
+      matchACompetitionId: active.competitionId,
+      matchBId: occupant.id,
+      matchBCompetitionId: occupant.competitionId,
+    };
   }
   if (overId.startsWith("insert-pre-") || overId.startsWith("insert-")) {
     const stripped = overId.startsWith("insert-pre-")
@@ -317,8 +331,8 @@ export function applyChange(
           : m
       );
     case "swap": {
-      const a = matches.find((m) => matchesId(m, change.matchAId, change.competitionId));
-      const b = matches.find((m) => matchesId(m, change.matchBId, change.competitionId));
+      const a = matches.find((m) => matchesId(m, change.matchAId, change.matchACompetitionId));
+      const b = matches.find((m) => matchesId(m, change.matchBId, change.matchBCompetitionId));
       if (!a || !b) return matches;
       return matches.map((m) => {
         if (m === a) return { ...m, timeSlot: b.timeSlot, fieldIndex: b.fieldIndex };

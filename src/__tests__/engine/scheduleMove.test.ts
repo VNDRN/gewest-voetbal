@@ -47,7 +47,9 @@ describe("applyChange — swap", () => {
     const next = applyChange(matches, {
       kind: "swap",
       matchAId: "a",
+      matchACompetitionId: "mens",
       matchBId: "b",
+      matchBCompetitionId: "mens",
     });
     const a = next.find((n) => n.id === "a")!;
     const b = next.find((n) => n.id === "b")!;
@@ -108,7 +110,13 @@ describe("validateChange — team conflict", () => {
       m({ id: "b", timeSlot: 1, fieldIndex: 0, homeTeamId: "gamma", awayTeamId: "alpha" }),
       m({ id: "c", timeSlot: 0, fieldIndex: 1, homeTeamId: "gamma", awayTeamId: "delta" }),
     ];
-    const res = validateChange(matches, { kind: "swap", matchAId: "a", matchBId: "b" });
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "mens",
+    });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe("team-conflict");
   });
@@ -146,7 +154,9 @@ describe("validateChange — team conflict", () => {
     const res = validateChange(matches, {
       kind: "swap",
       matchAId: "k1",
+      matchACompetitionId: "mens",
       matchBId: "k2",
+      matchBCompetitionId: "mens",
     });
     expect(res.ok).toBe(true);
   });
@@ -268,7 +278,13 @@ describe("changeFromDragEnd", () => {
       m({ id: "b", timeSlot: 2, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
     ];
     const c = changeFromDragEnd("a", "cell-2-1", matches);
-    expect(c).toEqual({ kind: "swap", matchAId: "a", matchBId: "b" });
+    expect(c).toEqual({
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "mens",
+    });
   });
 
   it("returns an insert for drop on an insert id", () => {
@@ -384,8 +400,9 @@ describe("applyChange — competition scoping", () => {
     const next = applyChange(matches, {
       kind: "swap",
       matchAId: "ko-1",
+      matchACompetitionId: "mens",
       matchBId: "ko-2",
-      competitionId: "mens",
+      matchBCompetitionId: "mens",
     });
     const mensKo1 = next.find((n) => n.id === "ko-1" && n.competitionId === "mens")!;
     const mensKo2 = next.find((n) => n.id === "ko-2" && n.competitionId === "mens")!;
@@ -449,7 +466,7 @@ describe("changeFromDragEnd — competition scoping", () => {
     expect(move).toMatchObject({ kind: "move", competitionId: "mens" });
 
     const swap = changeFromDragEnd("a", "cell-2-1", matches, "mens");
-    expect(swap).toMatchObject({ kind: "swap", competitionId: "mens" });
+    expect(swap).toMatchObject({ kind: "swap", matchACompetitionId: "mens", matchBCompetitionId: "mens" });
 
     const insert = changeFromDragEnd("a", "insert-1-0", matches, "mens");
     expect(insert).toMatchObject({ kind: "insert", competitionId: "mens" });
@@ -509,7 +526,13 @@ describe("validateChange — phase order", () => {
 
   it("rejects swapping a group match into a knockout slot", () => {
     const matches = [group("g1", 0), ko("k1", 2)];
-    const res = validateChange(matches, { kind: "swap", matchAId: "g1", matchBId: "k1" });
+    const res = validateChange(matches, {
+      kind: "swap",
+      matchAId: "g1",
+      matchACompetitionId: "mens",
+      matchBId: "k1",
+      matchBCompetitionId: "mens",
+    });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe("phase-order");
   });

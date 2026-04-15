@@ -105,6 +105,11 @@ export const helpContent: Record<HelpRoute, HelpEntry> = {
         description:
           "Verschijnt zodra alle groepswedstrijden gespeeld zijn. Zet de gekwalificeerde teams in de bracket.",
       },
+      {
+        label: "Wedstrijden herschikken",
+        description:
+          "Sleep een wedstrijd naar een lege cel om te verplaatsen, op een andere wedstrijd om te wisselen, of naar een streep tussen rijen om een nieuw tijdslot toe te voegen. Ongeldig? Je ziet het meteen — blauw = oké, rood = niet toegestaan.",
+      },
     ],
     next: "Na de groepsfase: genereer de knock-out en volg de bracket op Knock-out.",
   },

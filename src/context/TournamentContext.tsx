@@ -18,6 +18,11 @@ import type {
   Score,
 } from "../types";
 import { loadState, saveState } from "../persistence/localStorage";
+import {
+  validateChange,
+  type Change,
+  type KnockoutRoundInfo,
+} from "../engine/scheduleMove";
 
 function createEmptyCompetition(id: string, name: string): Competition {
   return {
@@ -88,6 +93,7 @@ export type TournamentAction =
   | { type: "ADD_BREAK"; breakItem: ScheduleBreak }
   | { type: "UPDATE_BREAK"; breakId: string; durationMinutes: number }
   | { type: "REMOVE_BREAK"; breakId: string }
+  | { type: "APPLY_SCHEDULE_CHANGE"; change: Change }
   | { type: "RESET" };
 
 function updateCompetition(
@@ -101,6 +107,49 @@ function updateCompetition(
       c.id === competitionId ? updater(c) : c
     ) as [Competition, Competition],
   };
+}
+
+function flattenMatches(state: Tournament) {
+  type Flat = {
+    id: string;
+    homeTeamId: string | null;
+    awayTeamId: string | null;
+    fieldIndex: number;
+    timeSlot: number;
+    score: Score | null;
+    phase: "group" | "knockout";
+    competitionId: string;
+    groupName: string;
+  };
+  const flat: Flat[] = [];
+  const rounds: KnockoutRoundInfo[] = [];
+  for (const comp of state.competitions) {
+    for (const g of comp.groups) {
+      for (const match of g.matches) {
+        flat.push({
+          ...match,
+          competitionId: comp.id,
+          groupName: g.name,
+        });
+      }
+    }
+    for (const r of comp.knockoutRounds) {
+      rounds.push({
+        competitionId: comp.id,
+        name: r.name,
+        matchIds: r.matches.map((m) => m.id),
+        isThirdPlace: !!r.isThirdPlace,
+      });
+      for (const match of r.matches) {
+        flat.push({
+          ...match,
+          competitionId: comp.id,
+          groupName: r.name,
+        });
+      }
+    }
+  }
+  return { flat, rounds };
 }
 
 function tournamentReducer(
@@ -219,6 +268,66 @@ function tournamentReducer(
           breaks: state.config.breaks.filter((b) => b.id !== action.breakId),
         },
       };
+
+    case "APPLY_SCHEDULE_CHANGE": {
+      const { flat, rounds } = flattenMatches(state);
+      const res = validateChange(flat, action.change, { rounds });
+      if (!res.ok) return state;
+
+      // For insert: applyChange shifts match slots but not breaks — fix that here.
+      let updatedBreaks = state.config.breaks;
+      if (action.change.kind === "insert") {
+        const atSlot = action.change.atSlot;
+        updatedBreaks = updatedBreaks.map((b) =>
+          b.afterTimeSlot >= atSlot
+            ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
+            : b
+        );
+      }
+
+      // Compress any empty timeslots left behind by move/insert.
+      const usedSlots = [...new Set(res.next.map((m) => m.timeSlot))].sort(
+        (a, b) => a - b
+      );
+      const isDense = usedSlots.every((slot, i) => slot === i);
+      const slotMap = isDense
+        ? null
+        : new Map(usedSlots.map((slot, i) => [slot, i]));
+
+      if (slotMap) {
+        updatedBreaks = updatedBreaks
+          .filter((b) => slotMap.has(b.afterTimeSlot))
+          .map((b) => ({ ...b, afterTimeSlot: slotMap.get(b.afterTimeSlot)! }));
+      }
+
+      const posById = new Map<string, { timeSlot: number; fieldIndex: number }>();
+      for (const nm of res.next) {
+        const timeSlot = slotMap ? slotMap.get(nm.timeSlot)! : nm.timeSlot;
+        posById.set(`${nm.competitionId}/${nm.id}`, { timeSlot, fieldIndex: nm.fieldIndex });
+      }
+
+      return {
+        ...state,
+        config: { ...state.config, breaks: updatedBreaks },
+        competitions: state.competitions.map((c) => ({
+          ...c,
+          groups: c.groups.map((g) => ({
+            ...g,
+            matches: g.matches.map((mm) => {
+              const p = posById.get(`${c.id}/${mm.id}`);
+              return p ? { ...mm, timeSlot: p.timeSlot, fieldIndex: p.fieldIndex } : mm;
+            }),
+          })),
+          knockoutRounds: c.knockoutRounds.map((r) => ({
+            ...r,
+            matches: r.matches.map((mm) => {
+              const p = posById.get(`${c.id}/${mm.id}`);
+              return p ? { ...mm, timeSlot: p.timeSlot, fieldIndex: p.fieldIndex } : mm;
+            }),
+          })),
+        })) as [Competition, Competition],
+      };
+    }
 
     case "RESET":
       return createDefaultTournament();

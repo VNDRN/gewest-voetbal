@@ -47,6 +47,11 @@ body {
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
+
+  body.is-dragging,
+  body.is-dragging * {
+    cursor: grabbing !important;
+  }
 }
 
 .display {

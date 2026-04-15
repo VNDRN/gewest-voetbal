@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { useDndSensors } from "../hooks/useDndSensors";
 import type { Competition, DraftGroup } from "../types";
 import DroppableGroup from "./DroppableGroup";
 import DraggableTeamPill from "./DraggableTeamPill";
@@ -31,9 +29,15 @@ export default function GroupDraftEditor({
     name: string;
   } | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useDndSensors();
+
+  useEffect(() => {
+    if (!activeTeam) return;
+    document.body.classList.add("is-dragging");
+    return () => {
+      document.body.classList.remove("is-dragging");
+    };
+  }, [activeTeam]);
 
   const allTeamNames = new Map<string, string>();
   for (const comp of competitions) {

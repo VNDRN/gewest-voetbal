@@ -101,3 +101,17 @@ export type GroupOption = {
   sizes: number[];
   label: string;
 };
+
+export type ScheduledMatch = {
+  id: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  fieldIndex: number;
+  timeSlot: number;
+  score: { home: number; away: number } | null;
+  phase: "group" | "knockout";
+  competitionId: string;
+  groupName: string;
+  homeSourceDescription?: string;
+  awaySourceDescription?: string;
+};

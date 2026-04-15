@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { scheduledMatchMeta } from "../../components/ScheduleGrid";
-import type { ScheduledMatch } from "../../components/ScheduleGrid";
+import type { ScheduledMatch } from "../../types";
 
 function makeMatch(partial: Partial<ScheduledMatch> = {}): ScheduledMatch {
   return {

@@ -1,0 +1,126 @@
+{
+  "id": "a5890e55-76ee-4426-8afe-27ce3ad4cabf",
+  "name": "Gewest Voetbal",
+  "date": "2026-04-13",
+  "config": {
+    "fieldCount": 4,
+    "slotDurationMinutes": 15,
+    "startTime": "13:00",
+    "breaks": []
+  },
+  "competitions": [
+    {
+      "id": "mens",
+      "name": "Heren",
+      "teams": [
+        {
+          "id": "8ce73bb4-1f64-48e4-b240-ecd8ca8cc598",
+          "name": "Alfa",
+          "groupId": ""
+        },
+        {
+          "id": "203b307d-64e4-48d5-9b86-353d0f3b3e47",
+          "name": "Bravo",
+          "groupId": ""
+        },
+        {
+          "id": "8a0d2ea1-3471-444f-a38c-d719330b6391",
+          "name": "Charlie",
+          "groupId": ""
+        },
+        {
+          "id": "2deda98e-0882-48c7-8766-64b77ff156ed",
+          "name": "Delta",
+          "groupId": ""
+        },
+        {
+          "id": "cdcef338-52b4-4f5b-b91b-e0d662787cd5",
+          "name": "Echo",
+          "groupId": ""
+        },
+        {
+          "id": "c8d51cb0-9dcb-4914-98df-f229be437409",
+          "name": "Foxtrot",
+          "groupId": ""
+        },
+        {
+          "id": "59fe9774-bdfe-4fdc-929e-0dde0e8b4534",
+          "name": "Golf",
+          "groupId": ""
+        },
+        {
+          "id": "cca0137d-7335-47b6-940d-7e8b7ddeff84",
+          "name": "Hotel",
+          "groupId": ""
+        },
+        {
+          "id": "2d00580d-2775-4d9d-b643-0d5524c123d7",
+          "name": "India",
+          "groupId": ""
+        },
+        {
+          "id": "fa6f76cb-531b-4f3b-ade1-4892ddf2a292",
+          "name": "Juliet",
+          "groupId": ""
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": [],
+      "config": {
+        "groupSize": 5,
+        "advancingPerGroup": 2,
+        "bestNextPlacedCount": 0,
+        "knockoutSize": 8
+      }
+    },
+    {
+      "id": "womens",
+      "name": "Dames",
+      "teams": [
+        {
+          "id": "0380d623-d814-4e6f-a2bb-90436bea68e2",
+          "name": "Amsterdam",
+          "groupId": ""
+        },
+        {
+          "id": "fdbec730-d631-43a5-8332-1a3d03fcbfb0",
+          "name": "Boston",
+          "groupId": ""
+        },
+        {
+          "id": "3b52c864-720b-4d05-aea2-54de627f5c2f",
+          "name": "Cairo",
+          "groupId": ""
+        },
+        {
+          "id": "3fce6eec-540a-4189-8e98-7454309466c6",
+          "name": "Dusseldorf",
+          "groupId": ""
+        },
+        {
+          "id": "17a27d8e-fc37-4a9b-9bb7-3797f48bebb0",
+          "name": "Exeter",
+          "groupId": ""
+        },
+        {
+          "id": "ca56596c-0e98-42f0-b9fc-462b8002595e",
+          "name": "Florence",
+          "groupId": ""
+        },
+        {
+          "id": "3d472870-2e54-4580-a767-949738a1300b",
+          "name": "Geneva",
+          "groupId": ""
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": [],
+      "config": {
+        "groupSize": 4,
+        "advancingPerGroup": 2,
+        "bestNextPlacedCount": 0,
+        "knockoutSize": 8
+      }
+    }
+  ]
+}

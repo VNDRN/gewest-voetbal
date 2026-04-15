@@ -38,14 +38,14 @@ function isTimerState(v: unknown): v is TimerState {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
   if (typeof o.status !== "string") return false;
-  if (typeof o.durationSeconds !== "number") return false;
+  if (!Number.isFinite(o.durationSeconds as number)) return false;
   switch (o.status) {
     case "idle":
       return typeof o.customDuration === "boolean";
     case "running":
-      return typeof o.startedAt === "number";
+      return Number.isFinite(o.startedAt as number);
     case "paused":
-      return typeof o.remainingSeconds === "number";
+      return Number.isFinite(o.remainingSeconds as number);
     case "expired":
       return true;
     default:

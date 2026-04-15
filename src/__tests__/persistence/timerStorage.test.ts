@@ -82,6 +82,23 @@ describe("timerStorage", () => {
     expect(loadTimerState()).toBeNull();
   });
 
+  it("returns null when paused state is missing remainingSeconds", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ status: "paused", durationSeconds: 60 })
+    );
+    expect(loadTimerState()).toBeNull();
+  });
+
+  it("returns null when durationSeconds is NaN-like", () => {
+    // JSON serialises NaN as the literal "null", which is not a valid number
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ status: "idle", durationSeconds: null, customDuration: false })
+    );
+    expect(loadTimerState()).toBeNull();
+  });
+
   it("clearTimerState removes the key", () => {
     saveTimerState({ status: "idle", durationSeconds: 60, customDuration: false });
     clearTimerState();

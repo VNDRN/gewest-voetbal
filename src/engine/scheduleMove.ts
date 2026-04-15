@@ -243,10 +243,6 @@ export function classifyTargets(
         map.set(id, "valid-move");
         continue;
       }
-      if (occupant.competitionId !== active.competitionId) {
-        map.set(id, "invalid");
-        continue;
-      }
       const res = validateChange(
         matches,
         {
@@ -313,8 +309,7 @@ export function changeFromDragEnd(
       return null;
     }
     const occupant = matches.find(
-      (m) => m.timeSlot === slot && m.fieldIndex === field &&
-        m.competitionId === active.competitionId
+      (m) => m.timeSlot === slot && m.fieldIndex === field
     );
     if (!occupant) {
       return { kind: "move", matchId: activeMatchId, toSlot: slot, toField: field, competitionId: activeCompetitionId };

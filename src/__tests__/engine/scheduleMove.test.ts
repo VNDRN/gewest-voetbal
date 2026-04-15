@@ -423,13 +423,13 @@ describe("classifyTargets — competition scoping", () => {
   const fieldCount = 2;
   const breaks: ScheduleBreak[] = [];
 
-  it("marks a cell occupied by the other competition as invalid (no cross-competition swap)", () => {
+  it("marks a cell occupied by the other competition as valid-swap when no constraint conflicts", () => {
     const matches = [
       m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
       m({ id: "b", competitionId: "womens", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
     ];
     const map = classifyTargets(matches, "a", fieldCount, breaks, { rounds: [] }, "mens");
-    expect(map.get("cell-1-0")).toBe("invalid");
+    expect(map.get("cell-1-0")).toBe("valid-swap");
   });
 
   it("marks same-competition occupant with no team conflict as valid-swap", () => {
@@ -447,14 +447,19 @@ describe("classifyTargets — competition scoping", () => {
 // ---------------------------------------------------------------------------
 
 describe("changeFromDragEnd — competition scoping", () => {
-  it("returns a move (not a swap) when cell is occupied by a different competition", () => {
+  it("returns a cross-competition swap when cell is occupied by a different competition", () => {
     const matches = [
       m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0 }),
       m({ id: "b", competitionId: "womens", timeSlot: 2, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
     ];
     const c = changeFromDragEnd("a", "cell-2-1", matches, "mens");
-    // womens occupant is invisible to mens drag — treat cell as empty → move
-    expect(c).toEqual({ kind: "move", matchId: "a", toSlot: 2, toField: 1, competitionId: "mens" });
+    expect(c).toEqual({
+      kind: "swap",
+      matchAId: "a",
+      matchACompetitionId: "mens",
+      matchBId: "b",
+      matchBCompetitionId: "womens",
+    });
   });
 
   it("includes competitionId in all returned change types", () => {

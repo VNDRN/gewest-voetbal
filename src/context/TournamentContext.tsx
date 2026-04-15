@@ -165,6 +165,17 @@ function shiftBreaksForwardFrom(
   );
 }
 
+function shiftBreaksBackwardFrom(
+  breaks: ScheduleBreak[],
+  slot: number
+): ScheduleBreak[] {
+  return breaks.map((b) =>
+    b.afterTimeSlot > slot
+      ? { ...b, afterTimeSlot: b.afterTimeSlot - 1 }
+      : b
+  );
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function tournamentReducer(
   state: Tournament,
@@ -377,11 +388,7 @@ export function tournamentReducer(
         config: {
           ...state.config,
           slotCount: state.config.slotCount - 1,
-          breaks: state.config.breaks.map((b) =>
-            b.afterTimeSlot > slot
-              ? { ...b, afterTimeSlot: b.afterTimeSlot - 1 }
-              : b
-          ),
+          breaks: shiftBreaksBackwardFrom(state.config.breaks, slot),
         },
         competitions: state.competitions.map((c) => ({
           ...c,

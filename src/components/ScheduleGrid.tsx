@@ -500,7 +500,7 @@ export default function ScheduleGrid({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="overflow-x-auto overflow-y-clip">
+      <div className="max-h-[calc(100dvh-12rem)] overflow-auto overscroll-contain">
         <table
           className="w-full table-fixed border-collapse text-sm"
           style={{ minWidth: `calc(88px + ${fieldCount} * 240px)` }}

@@ -10,7 +10,7 @@ function makeTournament(): Tournament {
     id: "t1",
     name: "Test Cup",
     date: "2026-04-11",
-    config: { fieldCount: 2, slotDurationMinutes: 20, startTime: "09:00", breaks: [] },
+    config: { fieldCount: 2, slotDurationMinutes: 20, startTime: "09:00", breaks: [], slotCount: 2 },
     competitions: [
       {
         id: "mens",

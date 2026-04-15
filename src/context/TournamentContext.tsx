@@ -45,7 +45,7 @@ function createDefaultTournament(): Tournament {
     id: crypto.randomUUID(),
     name: "Gewest Voetbal",
     date: new Date().toISOString().slice(0, 10),
-    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00", breaks: [] },
+    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00", breaks: [], slotCount: 0 },
     competitions: [
       createEmptyCompetition("mens", "Heren"),
       createEmptyCompetition("womens", "Dames"),

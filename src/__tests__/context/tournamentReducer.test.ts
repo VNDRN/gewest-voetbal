@@ -156,3 +156,32 @@ describe("REMOVE_SLOT", () => {
     expect(next.config.breaks.find((b) => b.id === "br-c")!.afterTimeSlot).toBe(2);
   });
 });
+
+describe("SET_GROUPS slotCount reset", () => {
+  it("recomputes slotCount = maxMatchTimeSlot + 1 and drops out-of-range breaks", () => {
+    const t = makeTournament();
+    // Pre-state: slotCount 3, break anchored at slot 5 (trailing, beyond new groups).
+    t.config.slotCount = 10;
+    t.config.breaks = [
+      { id: "in-range", afterTimeSlot: 1, durationMinutes: 10 },
+      { id: "out-of-range", afterTimeSlot: 7, durationMinutes: 10 },
+    ];
+    const next = tournamentReducer(t, {
+      type: "SET_GROUPS",
+      competitionId: "mens",
+      groups: [
+        {
+          id: "g1",
+          name: "Groep A",
+          teamIds: ["a", "b", "c"],
+          matches: [
+            { id: "m0", homeTeamId: "a", awayTeamId: "b", fieldIndex: 0, timeSlot: 0, score: null, phase: "group" },
+            { id: "m1", homeTeamId: "b", awayTeamId: "c", fieldIndex: 0, timeSlot: 1, score: null, phase: "group" },
+          ],
+        },
+      ],
+    });
+    expect(next.config.slotCount).toBe(2);
+    expect(next.config.breaks.map((b) => b.id)).toEqual(["in-range"]);
+  });
+});

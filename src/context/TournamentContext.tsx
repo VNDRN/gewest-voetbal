@@ -221,11 +221,23 @@ export function tournamentReducer(
         })),
       }));
 
-    case "SET_GROUPS":
-      return updateCompetition(state, action.competitionId, (c) => ({
+    case "SET_GROUPS": {
+      const nextState = updateCompetition(state, action.competitionId, (c) => ({
         ...c,
         groups: action.groups,
       }));
+      const { flat } = flattenMatches(nextState);
+      const maxSlot = flat.reduce((max, mm) => Math.max(max, mm.timeSlot), -1);
+      const slotCount = maxSlot + 1;
+      return {
+        ...nextState,
+        config: {
+          ...nextState.config,
+          slotCount,
+          breaks: nextState.config.breaks.filter((b) => b.afterTimeSlot < slotCount),
+        },
+      };
+    }
 
     case "SET_SCORE":
       return updateCompetition(state, action.competitionId, (c) => ({

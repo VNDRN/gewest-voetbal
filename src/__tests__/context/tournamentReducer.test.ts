@@ -160,7 +160,7 @@ describe("REMOVE_SLOT", () => {
 describe("SET_GROUPS slotCount reset", () => {
   it("recomputes slotCount = maxMatchTimeSlot + 1 and drops out-of-range breaks", () => {
     const t = makeTournament();
-    // Pre-state: slotCount 3, break anchored at slot 5 (trailing, beyond new groups).
+    // Pre-state: inflated slotCount 10 (e.g. from prior manual slots), break anchored at slot 7 (beyond new groups).
     t.config.slotCount = 10;
     t.config.breaks = [
       { id: "in-range", afterTimeSlot: 1, durationMinutes: 10 },

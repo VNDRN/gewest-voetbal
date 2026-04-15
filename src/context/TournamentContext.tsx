@@ -94,6 +94,8 @@ export type TournamentAction =
   | { type: "UPDATE_BREAK"; breakId: string; durationMinutes: number }
   | { type: "REMOVE_BREAK"; breakId: string }
   | { type: "APPLY_SCHEDULE_CHANGE"; change: Change }
+  | { type: "ADD_SLOT"; atSlot: number }
+  | { type: "REMOVE_SLOT"; slot: number }
   | { type: "RESET" };
 
 function updateCompetition(
@@ -152,7 +154,19 @@ function flattenMatches(state: Tournament) {
   return { flat, rounds };
 }
 
-function tournamentReducer(
+function shiftBreaksForwardFrom(
+  breaks: ScheduleBreak[],
+  atSlot: number
+): ScheduleBreak[] {
+  return breaks.map((b) =>
+    b.afterTimeSlot >= atSlot
+      ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
+      : b
+  );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function tournamentReducer(
   state: Tournament,
   action: TournamentAction
 ): Tournament {
@@ -328,6 +342,31 @@ function tournamentReducer(
         })) as [Competition, Competition],
       };
     }
+
+    case "ADD_SLOT": {
+      const atSlot = action.atSlot;
+      const shiftMatch = <T extends { timeSlot: number }>(mm: T): T =>
+        mm.timeSlot >= atSlot ? { ...mm, timeSlot: mm.timeSlot + 1 } : mm;
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          slotCount: state.config.slotCount + 1,
+          breaks: shiftBreaksForwardFrom(state.config.breaks, atSlot),
+        },
+        competitions: state.competitions.map((c) => ({
+          ...c,
+          groups: c.groups.map((g) => ({ ...g, matches: g.matches.map(shiftMatch) })),
+          knockoutRounds: c.knockoutRounds.map((r) => ({
+            ...r,
+            matches: r.matches.map(shiftMatch),
+          })),
+        })) as [Competition, Competition],
+      };
+    }
+
+    case "REMOVE_SLOT":
+      return state;
 
     case "RESET":
       return createDefaultTournament();

@@ -84,11 +84,13 @@ function DraggableCard({
   id,
   data,
   canDrag,
+  refCallback,
   children,
 }: {
   id: string;
   data?: Record<string, unknown>;
   canDrag: boolean;
+  refCallback?: (el: HTMLElement | null) => void;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -97,9 +99,13 @@ function DraggableCard({
     disabled: !canDrag,
   });
   const cls = canDrag ? "cursor-grab [&_button]:cursor-grab" : "";
+  const setRefs = (el: HTMLElement | null) => {
+    setNodeRef(el);
+    refCallback?.(el);
+  };
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       data-schedule-drag-root=""
       className={cls}
       {...attributes}
@@ -328,6 +334,11 @@ export default function ScheduleGrid({
 
   // Pre-insert-strip position: sync DOM measure in onDragStart, else dnd-kit rect, else modifier fallback.
   const initialDraggingRectRef = useRef<{ top: number; left: number } | null>(null);
+  const matchRefs = useRef(new Map<string, HTMLElement>());
+  const registerMatchRef = useCallback((key: string, el: HTMLElement | null) => {
+    if (el) matchRefs.current.set(key, el);
+    else matchRefs.current.delete(key);
+  }, []);
 
   // Compensates when the source cell moves (insert strips, hover heights, scroll). Baseline should
   // be pre-insert-strip via `scheduleDragRootRectBeforeLayout`; if missing, first `activeNodeRect`.
@@ -590,6 +601,9 @@ export default function ScheduleGrid({
                                 id={`${match.competitionId}:${match.id}`}
                                 data={{ competitionId: match.competitionId }}
                                 canDrag={canDrag}
+                                refCallback={(el) =>
+                                  registerMatchRef(`${match.competitionId}:${match.id}`, el)
+                                }
                               >
                                 {cardNode}
                               </DraggableCard>

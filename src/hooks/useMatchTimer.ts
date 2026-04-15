@@ -13,7 +13,14 @@ export interface UseMatchTimerResult {
   start: () => void;
   pause: () => void;
   resume: () => void;
+  reset: () => void;
+  editMinutes: (minutes: number) => void;
+  snoozeTwoMinutes: () => void;
+  startNextSlot: () => void;
+  dismissModal: () => void;
 }
+
+type HookState = { timer: TimerState; dismissed: boolean };
 
 function idleFromConfig(configSlotSeconds: number): TimerState {
   return { status: "idle", durationSeconds: configSlotSeconds, customDuration: false };
@@ -33,7 +40,10 @@ function computeRemaining(state: TimerState, now: number): number {
 }
 
 export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
-  const [state, setState] = useState<TimerState>(() => idleFromConfig(configSlotSeconds));
+  const [{ timer: state, dismissed }, setHookState] = useState<HookState>(() => ({
+    timer: idleFromConfig(configSlotSeconds),
+    dismissed: false,
+  }));
   const [now, setNow] = useState(() => Date.now());
 
   // Ticking + expiry — interval runs only while running; transitions to expired when remaining hits zero
@@ -42,10 +52,12 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     const id = setInterval(() => {
       const ts = Date.now();
       setNow(ts);
-      setState((s) => {
-        if (s.status !== "running") return s;
-        const remaining = computeRemaining(s, Date.now());
-        if (remaining <= 0) return { status: "expired", durationSeconds: s.durationSeconds };
+      setHookState((s) => {
+        if (s.timer.status !== "running") return s;
+        const remaining = computeRemaining(s.timer, Date.now());
+        if (remaining <= 0) {
+          return { timer: { status: "expired", durationSeconds: s.timer.durationSeconds }, dismissed: false };
+        }
         return s;
       });
     }, 250);
@@ -54,29 +66,64 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
 
   const start = useCallback(() => {
     const ts = Date.now();
-    setState((s) => {
-      if (s.status !== "idle") return s;
-      return { status: "running", durationSeconds: s.durationSeconds, startedAt: ts };
+    setHookState((s) => {
+      if (s.timer.status !== "idle") return s;
+      return { ...s, timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt: ts } };
     });
     setNow(ts);
   }, []);
 
   const pause = useCallback(() => {
-    setState((s) => {
-      if (s.status !== "running") return s;
-      const remaining = Math.max(0, Math.ceil(s.durationSeconds - (Date.now() - s.startedAt) / 1000));
-      return { status: "paused", durationSeconds: s.durationSeconds, remainingSeconds: remaining };
+    setHookState((s) => {
+      if (s.timer.status !== "running") return s;
+      const remaining = Math.max(0, Math.ceil(s.timer.durationSeconds - (Date.now() - s.timer.startedAt) / 1000));
+      return { ...s, timer: { status: "paused", durationSeconds: s.timer.durationSeconds, remainingSeconds: remaining } };
     });
   }, []);
 
   const resume = useCallback(() => {
     const ts = Date.now();
-    setState((s) => {
-      if (s.status !== "paused") return s;
-      const startedAt = ts - (s.durationSeconds - s.remainingSeconds) * 1000;
-      return { status: "running", durationSeconds: s.durationSeconds, startedAt };
+    setHookState((s) => {
+      if (s.timer.status !== "paused") return s;
+      const startedAt = ts - (s.timer.durationSeconds - s.timer.remainingSeconds) * 1000;
+      return { ...s, timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt } };
     });
     setNow(ts);
+  }, []);
+
+  const reset = useCallback(() => {
+    setHookState({ timer: { status: "idle", durationSeconds: configSlotSeconds, customDuration: false }, dismissed: false });
+  }, [configSlotSeconds]);
+
+  const editMinutes = useCallback((minutes: number) => {
+    const clamped = Math.max(1, Math.min(120, Math.floor(minutes)));
+    setHookState((s) => {
+      if (s.timer.status !== "idle") return s;
+      return { ...s, timer: { status: "idle", durationSeconds: clamped * 60, customDuration: true } };
+    });
+  }, []);
+
+  const snoozeTwoMinutes = useCallback(() => {
+    const ts = Date.now();
+    setHookState((s) => {
+      if (s.timer.status !== "expired") return s;
+      const startedAt = ts - (s.timer.durationSeconds - 120) * 1000;
+      return { timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt }, dismissed: false };
+    });
+    setNow(ts);
+  }, []);
+
+  const startNextSlot = useCallback(() => {
+    const ts = Date.now();
+    setHookState((s) => {
+      if (s.timer.status !== "expired") return s;
+      return { timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt: ts }, dismissed: false };
+    });
+    setNow(ts);
+  }, []);
+
+  const dismissModal = useCallback(() => {
+    setHookState((s) => ({ ...s, dismissed: true }));
   }, []);
 
   const remainingSeconds = computeRemaining(state, now);
@@ -87,9 +134,14 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     durationSeconds: state.durationSeconds,
     remainingSeconds,
     customDuration,
-    modalOpen: state.status === "expired",
+    modalOpen: state.status === "expired" && !dismissed,
     start,
     pause,
     resume,
+    reset,
+    editMinutes,
+    snoozeTwoMinutes,
+    startNextSlot,
+    dismissModal,
   };
 }

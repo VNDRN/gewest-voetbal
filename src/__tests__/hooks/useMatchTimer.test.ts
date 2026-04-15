@@ -133,3 +133,155 @@ describe("useMatchTimer — tick + expiry", () => {
     expect(result.current.modalOpen).toBe(true);
   });
 });
+
+describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-15T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("reset from running returns to idle with config duration", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.status).toBe("idle");
+    expect(result.current.durationSeconds).toBe(1200);
+    expect(result.current.customDuration).toBe(false);
+  });
+
+  it("editMinutes updates duration and marks custom when idle", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.editMinutes(15);
+    });
+    expect(result.current.durationSeconds).toBe(900);
+    expect(result.current.customDuration).toBe(true);
+    expect(result.current.remainingSeconds).toBe(900);
+  });
+
+  it("editMinutes clamps to [1, 120]", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.editMinutes(0);
+    });
+    expect(result.current.durationSeconds).toBe(60);
+    act(() => {
+      result.current.editMinutes(500);
+    });
+    expect(result.current.durationSeconds).toBe(7200);
+  });
+
+  it("editMinutes is a no-op while running", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      result.current.editMinutes(5);
+    });
+    expect(result.current.status).toBe("running");
+    expect(result.current.durationSeconds).toBe(1200);
+  });
+
+  it("snoozeTwoMinutes from expired: durationSeconds unchanged, remaining = 120", () => {
+    const { result } = renderHook(() => useMatchTimer(900));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(901_000);
+    });
+    expect(result.current.status).toBe("expired");
+    act(() => {
+      result.current.snoozeTwoMinutes();
+    });
+    expect(result.current.status).toBe("running");
+    expect(result.current.durationSeconds).toBe(900);
+    expect(result.current.remainingSeconds).toBe(120);
+  });
+
+  it("startNextSlot from expired starts a fresh run at durationSeconds", () => {
+    const { result } = renderHook(() => useMatchTimer(300));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(301_000);
+    });
+    act(() => {
+      result.current.startNextSlot();
+    });
+    expect(result.current.status).toBe("running");
+    expect(result.current.remainingSeconds).toBe(300);
+  });
+
+  it("after snooze + second expiry, startNextSlot uses original durationSeconds (not 120)", () => {
+    const { result } = renderHook(() => useMatchTimer(900));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(901_000);
+    });
+    act(() => {
+      result.current.snoozeTwoMinutes();
+    });
+    act(() => {
+      vi.advanceTimersByTime(121_000);
+    });
+    expect(result.current.status).toBe("expired");
+    act(() => {
+      result.current.startNextSlot();
+    });
+    expect(result.current.remainingSeconds).toBe(900);
+  });
+
+  it("dismissModal closes modal but keeps state expired", () => {
+    const { result } = renderHook(() => useMatchTimer(2));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.modalOpen).toBe(true);
+    act(() => {
+      result.current.dismissModal();
+    });
+    expect(result.current.status).toBe("expired");
+    expect(result.current.modalOpen).toBe(false);
+  });
+
+  it("re-entering expired reopens the modal (second cycle)", () => {
+    const { result } = renderHook(() => useMatchTimer(2));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    act(() => {
+      result.current.dismissModal();
+    });
+    expect(result.current.modalOpen).toBe(false);
+    act(() => {
+      result.current.startNextSlot();
+    });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.modalOpen).toBe(true);
+  });
+});

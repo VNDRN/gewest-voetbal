@@ -36,10 +36,19 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
   const [state, setState] = useState<TimerState>(() => idleFromConfig(configSlotSeconds));
   const [now, setNow] = useState(() => Date.now());
 
-  // Ticking — interval runs only while running
+  // Ticking + expiry — interval runs only while running; transitions to expired when remaining hits zero
   useEffect(() => {
     if (state.status !== "running") return;
-    const id = setInterval(() => setNow(Date.now()), 250);
+    const id = setInterval(() => {
+      const ts = Date.now();
+      setNow(ts);
+      setState((s) => {
+        if (s.status !== "running") return s;
+        const remaining = computeRemaining(s, ts);
+        if (remaining <= 0) return { status: "expired", durationSeconds: s.durationSeconds };
+        return s;
+      });
+    }, 250);
     return () => clearInterval(id);
   }, [state.status]);
 
@@ -78,7 +87,7 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     durationSeconds: state.durationSeconds,
     remainingSeconds,
     customDuration,
-    modalOpen: false, // filled in by later task
+    modalOpen: state.status === "expired",
     start,
     pause,
     resume,

@@ -85,3 +85,51 @@ describe("useMatchTimer — core transitions", () => {
     expect(result.current.status).toBe("idle");
   });
 });
+
+describe("useMatchTimer — tick + expiry", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-15T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("remainingSeconds decreases while running", () => {
+    const { result } = renderHook(() => useMatchTimer(60));
+    act(() => {
+      result.current.start();
+    });
+    expect(result.current.remainingSeconds).toBe(60);
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(result.current.remainingSeconds).toBe(50);
+  });
+
+  it("transitions to expired when remaining crosses zero", () => {
+    const { result } = renderHook(() => useMatchTimer(5));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(result.current.status).toBe("expired");
+    expect(result.current.remainingSeconds).toBe(0);
+  });
+
+  it("modalOpen is true once expired and not dismissed", () => {
+    const { result } = renderHook(() => useMatchTimer(2));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.status).toBe("expired");
+    expect(result.current.modalOpen).toBe(true);
+  });
+});

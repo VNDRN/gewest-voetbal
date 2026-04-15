@@ -500,7 +500,7 @@ export default function ScheduleGrid({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-clip">
         <table
           className="w-full table-fixed border-collapse text-sm"
           style={{ minWidth: `calc(88px + ${fieldCount} * 240px)` }}
@@ -513,13 +513,23 @@ export default function ScheduleGrid({
           </colgroup>
           <thead>
             <tr>
-              <th className="eyebrow-muted border border-card-hair bg-surface px-3 py-2 text-left text-[11px]">
+              <th
+                className="eyebrow-muted sticky left-0 top-0 z-30 bg-surface px-3 py-2 text-left text-[11px]"
+                style={{
+                  boxShadow:
+                    "inset -1px 0 0 var(--color-card-hair), inset 0 -1px 0 var(--color-card-hair), inset 1px 0 0 var(--color-card-hair), inset 0 1px 0 var(--color-card-hair)",
+                }}
+              >
                 Tijd
               </th>
               {Array.from({ length: fieldCount }, (_, i) => (
                 <th
                   key={i}
-                  className="eyebrow-muted border border-card-hair bg-surface px-3 py-2 text-center text-[11px]"
+                  className="eyebrow-muted sticky top-0 z-20 bg-surface px-3 py-2 text-center text-[11px]"
+                  style={{
+                    boxShadow:
+                      "inset -1px 0 0 var(--color-card-hair), inset 0 -1px 0 var(--color-card-hair), inset 0 1px 0 var(--color-card-hair)",
+                  }}
                 >
                   Veld {i + 1}
                 </th>
@@ -551,7 +561,13 @@ export default function ScheduleGrid({
                     />
                   )}
                   <tr>
-                    <td className="border border-card-hair bg-surface px-3 py-2 text-xs font-semibold text-ink-soft tabular-nums whitespace-nowrap">
+                    <td
+                      className="sticky left-0 z-10 bg-surface px-3 py-2 text-xs font-semibold text-ink-soft tabular-nums whitespace-nowrap"
+                      style={{
+                        boxShadow:
+                          "inset -1px 0 0 var(--color-card-hair), inset 0 -1px 0 var(--color-card-hair), inset 1px 0 0 var(--color-card-hair)",
+                      }}
+                    >
                       {formatTime(slot, startTime, slotDurationMinutes, breaks)}
                     </td>
                     {Array.from({ length: fieldCount }, (_, field) => {

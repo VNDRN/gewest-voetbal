@@ -394,6 +394,14 @@ export default function ScheduleGrid({
 
   useLayoutEffect(() => {
     if (!pendingFlip) return;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingFlip(null);
+      return;
+    }
     applyFlip(
       pendingFlip.movers,
       pendingFlip.oldRects,
@@ -401,11 +409,14 @@ export default function ScheduleGrid({
       FLIP_DURATION_MS,
       FLIP_EASING
     );
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingFlip(null);
   }, [pendingFlip]);
 
   function handleDragStart(event: DragStartEvent) {
+    for (const el of matchRefs.current.values()) {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
     // Draggable id is `${competitionId}:${matchId}` — parse to avoid dnd-kit id-map collisions
     // when both competitions share the same match id (e.g. ko-1).
     const compositeId = event.active.id as string;

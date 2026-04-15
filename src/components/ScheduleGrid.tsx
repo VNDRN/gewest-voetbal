@@ -127,12 +127,26 @@ function DroppableCell({
   );
 }
 
+function parseAtSlotFromInsertId(id: string | null): number | null {
+  if (!id) return null;
+  let rest: string;
+  if (id.startsWith("insert-pre-")) rest = id.slice("insert-pre-".length);
+  else if (id.startsWith("insert-")) rest = id.slice("insert-".length);
+  else return null;
+  const parts = rest.split("-");
+  if (parts.length !== 2) return null;
+  const n = Number(parts[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
 function InsertStrip({
   atSlot,
   fieldCount,
   targetMap,
   overId,
   active,
+  activeMatch,
+  teamNames,
   idPrefix = "insert",
 }: {
   atSlot: number;
@@ -140,13 +154,22 @@ function InsertStrip({
   targetMap: Map<string, TargetClass>;
   overId: string | null;
   active: boolean;
+  activeMatch: ScheduledMatch | null;
+  teamNames: Map<string, string>;
   idPrefix?: "insert" | "insert-pre";
 }) {
   if (!active) return null;
+  const hoveredAtSlot = parseAtSlotFromInsertId(overId);
+  const overIsPre = overId?.startsWith("insert-pre-") ?? false;
+  const rowIsPre = idPrefix === "insert-pre";
+  const rowHovered =
+    overId != null &&
+    hoveredAtSlot === atSlot &&
+    overIsPre === rowIsPre;
   const fields = Array.from({ length: fieldCount }, (_, f) => f);
   return (
     <tr>
-      <td className="border-0 p-0 text-right pr-2">
+      <td className="border-0 p-0 text-right pr-2 align-middle">
         <span className="font-display text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink/55">
           + Tijdslot
         </span>
@@ -157,14 +180,16 @@ function InsertStrip({
         const isInvalid = cls === "invalid";
         const isValid = cls === "valid-insert";
         const isOver = overId === id;
-        const base = "border-0 p-1";
         return (
-          <td key={f} className={base}>
+          <td key={f} className="border-0 p-1">
             <InsertSlot
               id={id}
               invalid={isInvalid}
               valid={isValid}
               hovered={isOver}
+              rowHovered={rowHovered}
+              activeMatch={activeMatch}
+              teamNames={teamNames}
             />
           </td>
         );
@@ -178,28 +203,36 @@ function InsertSlot({
   invalid,
   valid,
   hovered,
+  rowHovered,
+  activeMatch,
+  teamNames,
 }: {
   id: string;
   invalid: boolean;
   valid: boolean;
   hovered: boolean;
+  rowHovered: boolean;
+  activeMatch: ScheduledMatch | null;
+  teamNames: Map<string, string>;
 }) {
   const { setNodeRef } = useDroppable({ id });
-  let cls =
-    "rounded-md border-2 border-dashed transition-all ";
-  if (hovered && valid) {
-    cls += "h-20 bg-ink/10 border-ink flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink";
-  } else if (hovered && invalid) {
-    cls += "h-20 bg-brand/10 border-brand flex items-center justify-center font-display text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand";
+
+  let cls = "rounded-md border-2 border-dashed transition-all relative ";
+  if (rowHovered && invalid) {
+    cls += "min-h-[96px] bg-brand/10 border-brand";
+  } else if (rowHovered && valid) {
+    cls += "min-h-[96px] bg-ink/10 border-ink";
   } else if (invalid) {
     cls += "h-5 bg-brand/5 border-brand/45";
   } else {
     cls += "h-5 bg-ink/5 border-ink/40";
   }
+
   return (
     <div ref={setNodeRef} className={cls}>
-      {hovered && valid && "+ Nieuw tijdslot"}
-      {hovered && invalid && "× Niet toegestaan"}
+      {rowHovered && hovered && valid && activeMatch && (
+        <GhostCard match={activeMatch} teamNames={teamNames} chipKind="insert" />
+      )}
     </div>
   );
 }
@@ -447,6 +480,8 @@ export default function ScheduleGrid({
                       targetMap={targetMap}
                       overId={overId}
                       active={!!activeId}
+                      activeMatch={activeMatch}
+                      teamNames={teamNames}
                     />
                   )}
                   <tr>
@@ -572,6 +607,8 @@ export default function ScheduleGrid({
                         targetMap={targetMap}
                         overId={overId}
                         active={!!activeId}
+                        activeMatch={activeMatch}
+                        teamNames={teamNames}
                         idPrefix="insert-pre"
                       />
                       <tr>
@@ -619,6 +656,8 @@ export default function ScheduleGrid({
                         targetMap={targetMap}
                         overId={overId}
                         active={!!activeId}
+                        activeMatch={activeMatch}
+                        teamNames={teamNames}
                       />
                     </>
                   ) : activeId ? (
@@ -628,6 +667,8 @@ export default function ScheduleGrid({
                       targetMap={targetMap}
                       overId={overId}
                       active
+                      activeMatch={activeMatch}
+                      teamNames={teamNames}
                     />
                   ) : (
                     slotIdx < slots.length - 1 && (

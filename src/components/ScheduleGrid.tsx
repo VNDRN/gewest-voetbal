@@ -501,7 +501,16 @@ export default function ScheduleGrid({
       onDragCancel={handleDragCancel}
     >
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table
+          className="w-full table-fixed border-collapse text-sm"
+          style={{ minWidth: `calc(88px + ${fieldCount} * 240px)` }}
+        >
+          <colgroup>
+            <col style={{ width: "88px" }} />
+            {Array.from({ length: fieldCount }, (_, i) => (
+              <col key={i} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
               <th className="eyebrow-muted border border-card-hair bg-surface px-3 py-2 text-left text-[11px]">

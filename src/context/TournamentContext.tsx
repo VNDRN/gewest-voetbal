@@ -277,8 +277,9 @@ function tournamentReducer(
       // For insert: applyChange shifts match slots but not breaks — fix that here.
       let updatedBreaks = state.config.breaks;
       if (action.change.kind === "insert") {
+        const atSlot = action.change.atSlot;
         updatedBreaks = updatedBreaks.map((b) =>
-          b.afterTimeSlot >= action.change.atSlot
+          b.afterTimeSlot >= atSlot
             ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
             : b
         );

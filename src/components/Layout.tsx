@@ -101,14 +101,14 @@ export default function Layout() {
                 height="16"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden
               >
-                <path d="M12 4v12" />
-                <path d="M7 11l5 5 5-5" />
-                <path d="M5 20h14" />
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <path d="M17 21v-8H7v8" />
+                <path d="M7 3v5h8" />
               </svg>
               Opslaan
             </button>
@@ -122,14 +122,12 @@ export default function Layout() {
                 height="16"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden
               >
-                <path d="M12 20V8" />
-                <path d="M7 13l5-5 5 5" />
-                <path d="M5 4h14" />
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
               Laden
             </button>

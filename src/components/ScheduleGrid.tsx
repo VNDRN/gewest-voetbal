@@ -294,7 +294,7 @@ function cellStateClass(cls: TargetClass | undefined): string {
     case "valid-move":
       return "rounded-md border border-dashed border-ink/40 bg-ink/5";
     case "valid-swap":
-      return "ring-2 ring-ink rounded-md";
+      return "ring-2 ring-ink/50 rounded-md bg-blue-50";
     case "invalid":
       return "rounded-md border border-dashed border-brand/45 bg-brand/5 opacity-60";
     default:

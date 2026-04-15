@@ -249,7 +249,7 @@ function OverlayCard({
   return (
     <div
       className="relative flex w-[280px] flex-col gap-4 rounded-lg border border-card-hair bg-card p-3 shadow-2xl"
-      style={{ transform: "rotate(-2.5deg)" }}
+      style={{ transform: "rotate(-2.5deg) scale(0.92)" }}
     >
       <MatchCardContent match={match} teamNames={teamNames} showScore={false} />
       {chip && <ActionChip kind={chip} />}

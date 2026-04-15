@@ -21,7 +21,9 @@ import {
 import { formatTime } from "../engine/time";
 import type { ScheduleBreak, ScheduledMatch } from "../types";
 import { ActionChip, type ActionChipKind } from "./ActionChip";
+import { GhostCard } from "./GhostCard";
 import { MatchCardContent } from "./MatchCardContent";
+import { previewKindFor } from "../engine/schedulePreview";
 
 export type MatchPillVariant = "heren" | "dames";
 
@@ -462,6 +464,9 @@ export default function ScheduleGrid({
                       const cls = activeId ? targetMap.get(cellId) : undefined;
                       const stateCls = cellStateClass(cls, overId === cellId);
                       const isSource = activeId && match?.id === activeId && match?.competitionId === activeMatch?.competitionId;
+                      const preview = activeMatch
+                        ? previewKindFor(cellId, activeMatch, overId, targetMap, allMatches)
+                        : { kind: "default" as const };
 
                       if (!match && hiddenMatch) {
                         return (
@@ -479,17 +484,26 @@ export default function ScheduleGrid({
                         );
                       }
 
+                      if (preview.kind === "source-partner-ghost") {
+                        return (
+                          <td key={field} className="border border-card-hair p-1">
+                            <DroppableCell id={cellId} className="">
+                              <GhostCard match={preview.match} teamNames={teamNames} />
+                            </DroppableCell>
+                          </td>
+                        );
+                      }
+
                       if (!match) {
                         return (
                           <td key={field} className="border border-card-hair p-1">
-                            <DroppableCell
-                              id={cellId}
-                              className={`min-h-[96px] ${stateCls}`}
-                            >
-                              {cls === "valid-move" && activeId && (
-                                <div className="flex h-full min-h-[96px] items-center justify-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink/60">
-                                  Laat hier vallen
-                                </div>
+                            <DroppableCell id={cellId} className={`min-h-[96px] ${stateCls}`}>
+                              {preview.kind === "target-self-ghost" && (
+                                <GhostCard
+                                  match={preview.match}
+                                  teamNames={teamNames}
+                                  chipKind="move"
+                                />
                               )}
                             </DroppableCell>
                           </td>
@@ -530,13 +544,21 @@ export default function ScheduleGrid({
                       return (
                         <td key={field} className="border border-card-hair p-1">
                           <DroppableCell id={cellId} className={stateCls}>
-                            <DraggableCard
-                              id={`${match.competitionId}:${match.id}`}
-                              data={{ competitionId: match.competitionId }}
-                              canDrag={canDrag}
-                            >
-                              {cardNode}
-                            </DraggableCard>
+                            {preview.kind === "target-self-ghost" && preview.hideOccupant ? (
+                              <GhostCard
+                                match={preview.match}
+                                teamNames={teamNames}
+                                chipKind="swap"
+                              />
+                            ) : (
+                              <DraggableCard
+                                id={`${match.competitionId}:${match.id}`}
+                                data={{ competitionId: match.competitionId }}
+                                canDrag={canDrag}
+                              >
+                                {cardNode}
+                              </DraggableCard>
+                            )}
                           </DroppableCell>
                         </td>
                       );

@@ -86,6 +86,35 @@ describe("ADD_SLOT", () => {
   });
 });
 
+describe("APPLY_SCHEDULE_CHANGE — no compression", () => {
+  it("a move that leaves an empty slot preserves slotCount and the empty row", () => {
+    // Use non-overlapping teams so the move passes team-conflict validation.
+    // m1 (d vs e) is at slot 1 field 0. Move it to slot 0 field 1 (empty).
+    // After the move: slot 1 is empty, m2 must stay at slot 2.
+    const t = makeTournament();
+    t.competitions[0].groups[0].matches = [
+      { id: "m0", homeTeamId: "a", awayTeamId: "b", fieldIndex: 0, timeSlot: 0, score: null, phase: "group" },
+      { id: "m1", homeTeamId: "d", awayTeamId: "e", fieldIndex: 0, timeSlot: 1, score: null, phase: "group" },
+      { id: "m2", homeTeamId: "x", awayTeamId: "y", fieldIndex: 0, timeSlot: 2, score: null, phase: "group" },
+    ];
+    const next = tournamentReducer(t, {
+      type: "APPLY_SCHEDULE_CHANGE",
+      change: {
+        kind: "move",
+        matchId: "m1",
+        toSlot: 0,
+        toField: 1,
+        competitionId: "mens",
+      },
+    });
+    expect(next.config.slotCount).toBe(3);
+    const matches = next.competitions[0].groups[0].matches;
+    expect(matches.find((m) => m.id === "m1")!.timeSlot).toBe(0);
+    // Slot 1 is now empty — but m2 must NOT have compressed down into slot 1.
+    expect(matches.find((m) => m.id === "m2")!.timeSlot).toBe(2);
+  });
+});
+
 describe("REMOVE_SLOT", () => {
   it("removes an empty slot, shifts later matches up by 1, decrements slotCount", () => {
     // Fixture has matches at slots 0,1,2. Add an empty slot at 1 (matches shift to 0,2,3), then remove slot 1.

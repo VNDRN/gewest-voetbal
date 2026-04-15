@@ -44,7 +44,7 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
       setNow(ts);
       setState((s) => {
         if (s.status !== "running") return s;
-        const remaining = computeRemaining(s, ts);
+        const remaining = computeRemaining(s, Date.now());
         if (remaining <= 0) return { status: "expired", durationSeconds: s.durationSeconds };
         return s;
       });

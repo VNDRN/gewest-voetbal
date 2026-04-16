@@ -159,7 +159,7 @@ function shiftBreaksForwardFrom(
   atSlot: number
 ): ScheduleBreak[] {
   return breaks.map((b) =>
-    b.afterTimeSlot >= atSlot
+    b.afterTimeSlot >= atSlot - 1
       ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
       : b
   );

@@ -74,15 +74,26 @@ describe("ADD_SLOT", () => {
     expect(matches.find((m) => m.id === "m2")!.timeSlot).toBe(2);
   });
 
-  it("shifts breaks whose afterTimeSlot >= atSlot", () => {
+  it("shifts breaks in or after the insertion gap", () => {
     const t = makeTournament();
     t.config.breaks = [
       { id: "br0", afterTimeSlot: 0, durationMinutes: 10 },
       { id: "br1", afterTimeSlot: 1, durationMinutes: 5 },
     ];
     const next = tournamentReducer(t, { type: "ADD_SLOT", atSlot: 1 });
-    expect(next.config.breaks.find((b) => b.id === "br0")!.afterTimeSlot).toBe(0);
+    // br0 sits in the gap between slot 0 and slot 1 — shifts with the insertion
+    expect(next.config.breaks.find((b) => b.id === "br0")!.afterTimeSlot).toBe(1);
     expect(next.config.breaks.find((b) => b.id === "br1")!.afterTimeSlot).toBe(2);
+  });
+
+  it("does not shift breaks above the insertion gap", () => {
+    const t = makeTournament();
+    t.config.breaks = [
+      { id: "br0", afterTimeSlot: 0, durationMinutes: 10 },
+    ];
+    const next = tournamentReducer(t, { type: "ADD_SLOT", atSlot: 2 });
+    // br0 is between slot 0 and slot 1 — well above atSlot=2, so stays put
+    expect(next.config.breaks.find((b) => b.id === "br0")!.afterTimeSlot).toBe(0);
   });
 });
 

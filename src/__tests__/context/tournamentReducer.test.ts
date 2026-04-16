@@ -185,3 +185,24 @@ describe("SET_GROUPS slotCount reset", () => {
     expect(next.config.breaks.map((b) => b.id)).toEqual(["in-range"]);
   });
 });
+
+describe("SET_KNOCKOUT_ROUNDS grows slotCount", () => {
+  it("expands slotCount to cover knockout matches beyond current range", () => {
+    const t = makeTournament();
+    // Group matches at slots 0,1,2; slotCount=3
+    const next = tournamentReducer(t, {
+      type: "SET_KNOCKOUT_ROUNDS",
+      competitionId: "mens",
+      knockoutRounds: [
+        {
+          name: "Halve finale",
+          matches: [
+            { id: "ko-1", homeTeamId: "a", awayTeamId: "b", fieldIndex: 0, timeSlot: 4, score: null, phase: "knockout" as const, homeSourceDescription: "#1A", awaySourceDescription: "#2A" },
+            { id: "ko-2", homeTeamId: null, awayTeamId: null, fieldIndex: 1, timeSlot: 4, score: null, phase: "knockout" as const, homeSourceDescription: "#1B", awaySourceDescription: "#2B" },
+          ],
+        },
+      ],
+    });
+    expect(next.config.slotCount).toBe(5);
+  });
+});

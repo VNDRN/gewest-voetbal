@@ -254,11 +254,22 @@ export function tournamentReducer(
         ),
       }));
 
-    case "SET_KNOCKOUT_ROUNDS":
-      return updateCompetition(state, action.competitionId, (c) => ({
+    case "SET_KNOCKOUT_ROUNDS": {
+      const nextState = updateCompetition(state, action.competitionId, (c) => ({
         ...c,
         knockoutRounds: action.knockoutRounds,
       }));
+      const { flat } = flattenMatches(nextState);
+      const maxSlot = flat.reduce((max, mm) => Math.max(max, mm.timeSlot), -1);
+      const slotCount = Math.max(maxSlot + 1, state.config.slotCount);
+      return {
+        ...nextState,
+        config: {
+          ...nextState.config,
+          slotCount,
+        },
+      };
+    }
 
     case "SET_KNOCKOUT_SCORE":
       return updateCompetition(state, action.competitionId, (c) => ({

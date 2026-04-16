@@ -652,45 +652,53 @@ export default function ScheduleGrid({
                     />
                   )}
                   {schedBreak && (
-                    <tr>
-                      <td
-                        colSpan={fieldCount + 1}
-                        className="border border-card-hair p-0"
-                      >
-                        <div className="flex items-center justify-between border-y-2 border-dashed border-beige bg-beige/20 px-4 py-2.5">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-base">☕</span>
-                            <span className="text-sm font-bold text-ink">
-                              Pauze
-                            </span>
-                            <span className="text-xs text-ink-soft">
-                              {breakStartTime} – {breakEndTime}
-                            </span>
+                    <>
+                      <AddRowGutter
+                        atSlot={slot + 1}
+                        fieldCount={fieldCount}
+                        onAddSlot={onAddSlot}
+                        onAddBreak={onAddBreak}
+                      />
+                      <tr>
+                        <td
+                          colSpan={fieldCount + 1}
+                          className="border border-card-hair p-0"
+                        >
+                          <div className="flex items-center justify-between border-y-2 border-dashed border-beige bg-beige/20 px-4 py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">☕</span>
+                              <span className="text-sm font-bold text-ink">
+                                Pauze
+                              </span>
+                              <span className="text-xs text-ink-soft">
+                                {breakStartTime} – {breakEndTime}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min={1}
+                                value={schedBreak.durationMinutes}
+                                onChange={(e) =>
+                                  onUpdateBreak(
+                                    schedBreak.id,
+                                    Math.max(1, Number(e.target.value))
+                                  )
+                                }
+                                className="w-14 rounded-md border border-beige bg-card px-1.5 py-0.5 text-center text-xs tabular-nums text-ink"
+                              />
+                              <span className="text-xs text-ink-soft">min</span>
+                              <button
+                                onClick={() => onRemoveBreak(schedBreak.id)}
+                                className="text-sm text-brand opacity-60 hover:opacity-100"
+                              >
+                                ✕
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={1}
-                              value={schedBreak.durationMinutes}
-                              onChange={(e) =>
-                                onUpdateBreak(
-                                  schedBreak.id,
-                                  Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              className="w-14 rounded-md border border-beige bg-card px-1.5 py-0.5 text-center text-xs tabular-nums text-ink"
-                            />
-                            <span className="text-xs text-ink-soft">min</span>
-                            <button
-                              onClick={() => onRemoveBreak(schedBreak.id)}
-                              className="text-sm text-brand opacity-60 hover:opacity-100"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                    </>
                   )}
                   <AddRowGutter
                     atSlot={slot + 1}

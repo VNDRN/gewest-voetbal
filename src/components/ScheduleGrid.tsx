@@ -385,7 +385,7 @@ export default function ScheduleGrid({
     setActiveId(id);
     setActiveCompetitionId(compId ?? null);
     setTargetMap(
-      classifyTargets(allMatches, id, fieldCount, breaks, { rounds: knockoutRoundInfos }, compId)
+      classifyTargets(allMatches, id, fieldCount, { rounds: knockoutRoundInfos }, compId)
     );
   }
 
@@ -406,7 +406,7 @@ export default function ScheduleGrid({
       const change = changeFromDragEnd(matchId, String(over.id), allMatches, compId);
       const cls = targetMap.get(String(over.id));
       if (change && cls !== "invalid") {
-        const movers = computeMovers(change, allMatches);
+        const movers = computeMovers(change);
         const oldRects = new Map<string, DOMRect>();
         for (const { key } of movers) {
           const el = matchRefs.current.get(key);
@@ -440,7 +440,6 @@ export default function ScheduleGrid({
     if (cls === "invalid") return "reject";
     if (cls === "valid-move") return "move";
     if (cls === "valid-swap") return "swap";
-    if (cls === "valid-insert") return "insert";
     return null;
   }
 

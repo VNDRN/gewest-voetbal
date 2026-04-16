@@ -117,18 +117,14 @@ describe("previewKindFor", () => {
     expect(r.kind).toBe("source-dimmed");
   });
 
-  it("ignores insert-* overIds (not a cell, but still safe input)", () => {
+  it("returns default for cells when overId is unrecognized (not in targetMap)", () => {
     const active = m({ id: "a", timeSlot: 0, fieldIndex: 0 });
-    const targetMap = new Map<string, TargetClass>([
-      ["insert-2-1", "valid-insert"],
-    ]);
-    // Source cell is NOT changed to partner-ghost on an insert hover
+    const targetMap = new Map<string, TargetClass>();
     expect(
-      previewKindFor("cell-0-0", active, "insert-2-1", targetMap, [active])
+      previewKindFor("cell-0-0", active, "unknown-id", targetMap, [active])
     ).toEqual({ kind: "source-dimmed" });
-    // Random other cell is default
     expect(
-      previewKindFor("cell-4-0", active, "insert-2-1", targetMap, [active])
+      previewKindFor("cell-4-0", active, "unknown-id", targetMap, [active])
     ).toEqual({ kind: "default" });
   });
 });

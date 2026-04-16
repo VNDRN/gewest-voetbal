@@ -1,4 +1,4 @@
-import type { ScheduleBreak, ScheduledMatch } from "../types";
+import type { ScheduledMatch } from "../types";
 
 export type KnockoutRoundInfo = {
   competitionId: string;
@@ -93,15 +93,7 @@ export type SwapChange = {
   matchBCompetitionId: string;
 };
 
-export type InsertChange = {
-  kind: "insert";
-  matchId: string;
-  atSlot: number;
-  toField: number;
-  competitionId?: string;
-};
-
-export type Change = MoveChange | SwapChange | InsertChange;
+export type Change = MoveChange | SwapChange;
 
 export type ValidationReason =
   | "played"
@@ -204,13 +196,12 @@ export function validateChange(
   return { ok: true, next };
 }
 
-export type TargetClass = "valid-move" | "valid-swap" | "valid-insert" | "invalid";
+export type TargetClass = "valid-move" | "valid-swap" | "invalid";
 
 export function classifyTargets(
   matches: ScheduledMatch[],
   activeMatchId: string,
   fieldCount: number,
-  breaks: ScheduleBreak[],
   context: ValidationContext = { rounds: [] },
   activeCompetitionId?: string
 ): Map<string, TargetClass> {
@@ -258,34 +249,6 @@ export function classifyTargets(
     }
   }
 
-  // Insert-row targets: between rows + around breaks
-  const insertPositions = new Set<number>();
-  for (let slot = 0; slot <= maxSlot + 1; slot++) {
-    insertPositions.add(slot);
-  }
-  const breakSlots = new Set<number>();
-  for (const b of breaks) {
-    const atSlot = b.afterTimeSlot + 1;
-    insertPositions.add(atSlot);
-    breakSlots.add(atSlot);
-  }
-  for (const atSlot of insertPositions) {
-    for (let field = 0; field < fieldCount; field++) {
-      const res = validateChange(
-        matches,
-        { kind: "insert", matchId: activeMatchId, atSlot, toField: field, competitionId: active.competitionId },
-        context
-      );
-      const cls: TargetClass = res.ok ? "valid-insert" : "invalid";
-      map.set(`insert-${atSlot}-${field}`, cls);
-      // Above-break strip shares the same atSlot but uses a distinct droppable id
-      // so dnd-kit can detect the pre-break zone independently.
-      if (breakSlots.has(atSlot)) {
-        map.set(`insert-pre-${atSlot}-${field}`, cls);
-      }
-    }
-  }
-
   return map;
 }
 
@@ -322,17 +285,6 @@ export function changeFromDragEnd(
       matchBCompetitionId: occupant.competitionId,
     };
   }
-  if (overId.startsWith("insert-pre-") || overId.startsWith("insert-")) {
-    const stripped = overId.startsWith("insert-pre-")
-      ? overId.slice("insert-pre-".length)
-      : overId.slice("insert-".length);
-    const parts = stripped.split("-");
-    if (parts.length !== 2) return null;
-    const atSlot = Number(parts[0]);
-    const field = Number(parts[1]);
-    if (!Number.isFinite(atSlot) || !Number.isFinite(field)) return null;
-    return { kind: "insert", matchId: activeMatchId, atSlot, toField: field, competitionId: activeCompetitionId };
-  }
   return null;
 }
 
@@ -358,17 +310,6 @@ export function applyChange(
       return matches.map((m) => {
         if (m === a) return { ...m, timeSlot: b.timeSlot, fieldIndex: b.fieldIndex };
         if (m === b) return { ...m, timeSlot: a.timeSlot, fieldIndex: a.fieldIndex };
-        return m;
-      });
-    }
-    case "insert": {
-      return matches.map((m) => {
-        if (matchesId(m, change.matchId, change.competitionId)) {
-          return { ...m, timeSlot: change.atSlot, fieldIndex: change.toField };
-        }
-        if (m.timeSlot >= change.atSlot) {
-          return { ...m, timeSlot: m.timeSlot + 1 };
-        }
         return m;
       });
     }

@@ -1,22 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { computeMovers, applyFlip } from "../../engine/scheduleFlip";
 import type { Change } from "../../engine/scheduleMove";
-import type { ScheduledMatch } from "../../types";
-
-function m(partial: Partial<ScheduledMatch> = {}): ScheduledMatch {
-  return {
-    id: "x",
-    homeTeamId: "a",
-    awayTeamId: "b",
-    fieldIndex: 0,
-    timeSlot: 0,
-    score: null,
-    phase: "group",
-    competitionId: "mens",
-    groupName: "Groep A",
-    ...partial,
-  };
-}
 
 describe("computeMovers", () => {
   it("returns no movers for a plain move into an empty cell", () => {
@@ -27,7 +11,7 @@ describe("computeMovers", () => {
       toField: 0,
       competitionId: "mens",
     };
-    expect(computeMovers(change, [m({ id: "a" })])).toEqual([]);
+    expect(computeMovers(change)).toEqual([]);
   });
 
   it("returns the partner as the sole mover on a swap", () => {
@@ -38,30 +22,9 @@ describe("computeMovers", () => {
       matchBId: "b",
       matchBCompetitionId: "womens",
     };
-    expect(computeMovers(change, [])).toEqual([{ key: "womens:b" }]);
+    expect(computeMovers(change)).toEqual([{ key: "womens:b" }]);
   });
 
-  it("returns every match at timeSlot >= atSlot (excluding the inserted one) on an insert", () => {
-    const matches = [
-      m({ id: "a", timeSlot: 0 }),
-      m({ id: "b", timeSlot: 2 }),
-      m({ id: "c", timeSlot: 3 }),
-      m({ id: "moving", timeSlot: 5 }),
-    ];
-    const change: Change = {
-      kind: "insert",
-      matchId: "moving",
-      atSlot: 2,
-      toField: 0,
-      competitionId: "mens",
-    };
-    const movers = computeMovers(change, matches);
-    expect(movers).toEqual(
-      expect.arrayContaining([{ key: "mens:b" }, { key: "mens:c" }])
-    );
-    expect(movers).not.toContainEqual({ key: "mens:moving" });
-    expect(movers).not.toContainEqual({ key: "mens:a" });
-  });
 });
 
 describe("applyFlip", () => {

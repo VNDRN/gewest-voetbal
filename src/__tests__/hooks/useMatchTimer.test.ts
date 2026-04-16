@@ -230,6 +230,23 @@ describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
     expect(result.current.remainingSeconds).toBe(120);
   });
 
+  it("snoozeTwoMinutes gives 120s even when slot is shorter than 2 minutes", () => {
+    const { result } = renderHook(() => useMatchTimer(60));
+    act(() => {
+      result.current.start();
+    });
+    act(() => {
+      vi.advanceTimersByTime(61_000);
+    });
+    expect(result.current.status).toBe("expired");
+    act(() => {
+      result.current.snoozeTwoMinutes();
+    });
+    expect(result.current.status).toBe("running");
+    expect(result.current.durationSeconds).toBe(60);
+    expect(result.current.remainingSeconds).toBe(120);
+  });
+
   it("startNextSlot from expired starts a fresh run at durationSeconds", () => {
     const { result } = renderHook(() => useMatchTimer(300));
     act(() => {

@@ -144,8 +144,7 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     const ts = Date.now();
     setHookState((s) => {
       if (s.timer.status !== "expired") return s;
-      const snoozeRemaining = Math.min(120, s.timer.durationSeconds);
-      const startedAt = ts - (s.timer.durationSeconds - snoozeRemaining) * 1000;
+      const startedAt = ts - (s.timer.durationSeconds - 120) * 1000;
       return { timer: { status: "running", durationSeconds: s.timer.durationSeconds, startedAt }, dismissed: false };
     });
     setNow(ts);

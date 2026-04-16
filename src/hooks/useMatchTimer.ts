@@ -15,7 +15,7 @@ export interface UseMatchTimerResult {
   pause: () => void;
   resume: () => void;
   reset: () => void;
-  editMinutes: (minutes: number) => void;
+  editDuration: (seconds: number) => void;
   snoozeTwoMinutes: () => void;
   startNextSlot: () => void;
   dismissModal: () => void;
@@ -25,7 +25,7 @@ export interface UseMatchTimerResult {
 // Convention: transitions that begin a fresh expiry cycle (tick→expired,
 // snooze, startNextSlot, reset) construct a fresh HookState with
 // `dismissed: false`. Transitions that don't change the dismissed lifecycle
-// (start, pause, resume, editMinutes) spread `...s` to preserve it.
+// (start, pause, resume, editDuration) spread `...s` to preserve it.
 type HookState = { timer: TimerState; dismissed: boolean };
 
 function idleFromConfig(configSlotSeconds: number): TimerState {
@@ -132,11 +132,11 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     setHookState({ timer: { status: "idle", durationSeconds: configSlotSeconds, customDuration: false }, dismissed: false });
   }, [configSlotSeconds]);
 
-  const editMinutes = useCallback((minutes: number) => {
-    const clamped = Math.max(1, Math.min(120, Math.floor(minutes)));
+  const editDuration = useCallback((seconds: number) => {
+    const clamped = Math.max(1, Math.min(7200, Math.floor(seconds)));
     setHookState((s) => {
       if (s.timer.status !== "idle") return s;
-      return { ...s, timer: { status: "idle", durationSeconds: clamped * 60, customDuration: true } };
+      return { ...s, timer: { status: "idle", durationSeconds: clamped, customDuration: true } };
     });
   }, []);
 
@@ -177,7 +177,7 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     pause,
     resume,
     reset,
-    editMinutes,
+    editDuration,
     snoozeTwoMinutes,
     startNextSlot,
     dismissModal,

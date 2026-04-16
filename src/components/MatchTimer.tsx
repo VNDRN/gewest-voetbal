@@ -21,7 +21,7 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
   const isExpired = timer.status === "expired";
   const canEdit = timer.status === "idle";
   const display = formatMMSS(timer.remainingSeconds);
-  const minutesLabel = Math.max(1, Math.round(timer.durationSeconds / 60));
+  const durationDisplay = formatMMSS(timer.durationSeconds);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -32,13 +32,28 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
 
   function startEdit() {
     if (!canEdit) return;
-    setDraft(String(minutesLabel));
+    setDraft(formatMMSS(timer.durationSeconds));
     setEditing(true);
   }
 
+  function parseMMSS(input: string): number | null {
+    const trimmed = input.trim();
+    if (trimmed.includes(":")) {
+      const [mStr, sStr] = trimmed.split(":");
+      const m = Number(mStr);
+      const s = Number(sStr);
+      if (!Number.isFinite(m) || !Number.isFinite(s) || m < 0 || s < 0 || s >= 60) return null;
+      const total = m * 60 + s;
+      return total >= 1 ? total : null;
+    }
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 1) return null;
+    return n * 60;
+  }
+
   function commitEdit() {
-    const n = Number(draft);
-    if (Number.isFinite(n) && n >= 1) timer.editMinutes(n);
+    const seconds = parseMMSS(draft);
+    if (seconds !== null) timer.editDuration(seconds);
     setEditing(false);
   }
 
@@ -70,7 +85,7 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
     : "Timer starten";
 
   const digitsLabel = canEdit
-    ? `Timerduur bewerken, huidige duur ${minutesLabel} minuten`
+    ? `Timerduur bewerken, huidige duur ${durationDisplay}`
     : `Resterende tijd ${display}`;
 
   return (
@@ -82,9 +97,8 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
       {editing ? (
         <input
           ref={inputRef}
-          type="number"
-          min={1}
-          max={120}
+          type="text"
+          inputMode="numeric"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commitEdit}
@@ -92,7 +106,8 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
             if (e.key === "Enter") commitEdit();
             else if (e.key === "Escape") cancelEdit();
           }}
-          aria-label="Timerduur in minuten"
+          aria-label="Timerduur (MM:SS of minuten)"
+          placeholder="MM:SS"
           className="w-[5.5rem] border-r border-hair bg-card px-3 py-2 text-center font-mono text-base font-extrabold tabular-nums focus:outline-none"
         />
       ) : (
@@ -130,7 +145,7 @@ export default function MatchTimer({ timer }: MatchTimerProps) {
       <button
         type="button"
         onClick={timer.reset}
-        aria-label={`Timer resetten naar ${minutesLabel} minuten`}
+        aria-label="Timer resetten"
         className="flex items-center px-3 py-2 text-ink-soft hover:bg-surface"
       >
         <svg

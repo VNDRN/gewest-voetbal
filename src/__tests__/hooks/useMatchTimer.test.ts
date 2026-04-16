@@ -161,41 +161,41 @@ describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
     expect(result.current.customDuration).toBe(false);
   });
 
-  it("editMinutes updates duration and marks custom when idle", () => {
+  it("editDuration updates duration in seconds and marks custom when idle", () => {
     const { result } = renderHook(() => useMatchTimer(1200));
     act(() => {
-      result.current.editMinutes(15);
+      result.current.editDuration(150);
     });
-    expect(result.current.durationSeconds).toBe(900);
+    expect(result.current.durationSeconds).toBe(150);
     expect(result.current.customDuration).toBe(true);
-    expect(result.current.remainingSeconds).toBe(900);
+    expect(result.current.remainingSeconds).toBe(150);
   });
 
-  it("editMinutes clamps to [1, 120]", () => {
+  it("editDuration clamps to [1, 7200]", () => {
     const { result } = renderHook(() => useMatchTimer(1200));
     act(() => {
-      result.current.editMinutes(0);
+      result.current.editDuration(0);
     });
-    expect(result.current.durationSeconds).toBe(60);
+    expect(result.current.durationSeconds).toBe(1);
     act(() => {
-      result.current.editMinutes(500);
+      result.current.editDuration(9999);
     });
     expect(result.current.durationSeconds).toBe(7200);
   });
 
-  it("editMinutes is a no-op while running", () => {
+  it("editDuration is a no-op while running", () => {
     const { result } = renderHook(() => useMatchTimer(1200));
     act(() => {
       result.current.start();
     });
     act(() => {
-      result.current.editMinutes(5);
+      result.current.editDuration(300);
     });
     expect(result.current.status).toBe("running");
     expect(result.current.durationSeconds).toBe(1200);
   });
 
-  it("editMinutes is a no-op while paused", () => {
+  it("editDuration is a no-op while paused", () => {
     const { result } = renderHook(() => useMatchTimer(1200));
     act(() => {
       result.current.start();
@@ -207,7 +207,7 @@ describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
       result.current.pause();
     });
     act(() => {
-      result.current.editMinutes(5);
+      result.current.editDuration(300);
     });
     expect(result.current.status).toBe("paused");
     expect(result.current.durationSeconds).toBe(1200);
@@ -301,5 +301,101 @@ describe("useMatchTimer — reset, edit, snooze, next-slot, dismiss", () => {
       vi.advanceTimersByTime(3000);
     });
     expect(result.current.modalOpen).toBe(true);
+  });
+});
+
+describe("useMatchTimer — persistence and config sync", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-15T10:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("persists state to localStorage on every change", () => {
+    const { result } = renderHook(() => useMatchTimer(60));
+    act(() => {
+      result.current.start();
+    });
+    const raw = localStorage.getItem("ft:timer:v1");
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string);
+    expect(parsed.status).toBe("running");
+    expect(parsed.durationSeconds).toBe(60);
+    expect(typeof parsed.startedAt).toBe("number");
+  });
+
+  it("rehydrates running state from localStorage on mount", () => {
+    const startedAt = Date.now() - 10_000; // 10s elapsed
+    localStorage.setItem(
+      "ft:timer:v1",
+      JSON.stringify({ status: "running", durationSeconds: 60, startedAt })
+    );
+    const { result } = renderHook(() => useMatchTimer(60));
+    expect(result.current.status).toBe("running");
+    expect(result.current.remainingSeconds).toBe(50);
+  });
+
+  it("rehydrates to expired when stored running is already past duration", () => {
+    const startedAt = Date.now() - 120_000; // 2 minutes ago
+    localStorage.setItem(
+      "ft:timer:v1",
+      JSON.stringify({ status: "running", durationSeconds: 60, startedAt })
+    );
+    const { result } = renderHook(() => useMatchTimer(60));
+    expect(result.current.status).toBe("expired");
+    expect(result.current.modalOpen).toBe(true);
+  });
+
+  it("syncs idle duration with configSlotSeconds when not custom", () => {
+    const { result, rerender } = renderHook(
+      ({ cfg }) => useMatchTimer(cfg),
+      { initialProps: { cfg: 1200 } }
+    );
+    expect(result.current.durationSeconds).toBe(1200);
+    rerender({ cfg: 600 });
+    expect(result.current.durationSeconds).toBe(600);
+  });
+
+  it("does NOT sync when idle duration is user-customized", () => {
+    const { result, rerender } = renderHook(
+      ({ cfg }) => useMatchTimer(cfg),
+      { initialProps: { cfg: 1200 } }
+    );
+    act(() => {
+      result.current.editDuration(900); // customDuration = true
+    });
+    rerender({ cfg: 600 });
+    expect(result.current.durationSeconds).toBe(900);
+    expect(result.current.customDuration).toBe(true);
+  });
+
+  it("does NOT sync when running", () => {
+    const { result, rerender } = renderHook(
+      ({ cfg }) => useMatchTimer(cfg),
+      { initialProps: { cfg: 1200 } }
+    );
+    act(() => {
+      result.current.start();
+    });
+    rerender({ cfg: 600 });
+    expect(result.current.durationSeconds).toBe(1200);
+    expect(result.current.status).toBe("running");
+  });
+
+  it("reset clears customDuration and re-syncs to current config", () => {
+    const { result } = renderHook(() => useMatchTimer(1200));
+    act(() => {
+      result.current.editDuration(900);
+    });
+    expect(result.current.customDuration).toBe(true);
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.customDuration).toBe(false);
+    expect(result.current.durationSeconds).toBe(1200);
   });
 });

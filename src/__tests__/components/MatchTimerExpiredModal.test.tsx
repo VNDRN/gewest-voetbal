@@ -14,7 +14,7 @@ function makeTimer(overrides: Partial<UseMatchTimerResult> = {}): UseMatchTimerR
     pause: vi.fn(),
     resume: vi.fn(),
     reset: vi.fn(),
-    editMinutes: vi.fn(),
+    editDuration: vi.fn(),
     snoozeTwoMinutes: vi.fn(),
     startNextSlot: vi.fn(),
     dismissModal: vi.fn(),

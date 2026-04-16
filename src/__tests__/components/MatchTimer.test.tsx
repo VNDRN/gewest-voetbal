@@ -14,7 +14,7 @@ function makeTimer(overrides: Partial<UseMatchTimerResult> = {}): UseMatchTimerR
     pause: vi.fn(),
     resume: vi.fn(),
     reset: vi.fn(),
-    editMinutes: vi.fn(),
+    editDuration: vi.fn(),
     snoozeTwoMinutes: vi.fn(),
     startNextSlot: vi.fn(),
     dismissModal: vi.fn(),
@@ -67,27 +67,37 @@ describe("MatchTimer", () => {
     const timer = makeTimer();
     render(<MatchTimer timer={timer} />);
     fireEvent.click(screen.getByLabelText(/Timerduur bewerken/));
-    expect(screen.getByLabelText("Timerduur in minuten")).toBeInTheDocument();
+    expect(screen.getByLabelText("Timerduur (MM:SS of minuten)")).toBeInTheDocument();
   });
 
-  it("input commits editMinutes on Enter", () => {
+  it("input commits editDuration with MM:SS on Enter", () => {
     const timer = makeTimer();
     render(<MatchTimer timer={timer} />);
     fireEvent.click(screen.getByLabelText(/Timerduur bewerken/));
-    const input = screen.getByLabelText("Timerduur in minuten") as HTMLInputElement;
+    const input = screen.getByLabelText("Timerduur (MM:SS of minuten)") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "2:30" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(timer.editDuration).toHaveBeenCalledWith(150);
+  });
+
+  it("input commits editDuration with bare minutes on Enter", () => {
+    const timer = makeTimer();
+    render(<MatchTimer timer={timer} />);
+    fireEvent.click(screen.getByLabelText(/Timerduur bewerken/));
+    const input = screen.getByLabelText("Timerduur (MM:SS of minuten)") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "15" } });
     fireEvent.keyDown(input, { key: "Enter" });
-    expect(timer.editMinutes).toHaveBeenCalledWith(15);
+    expect(timer.editDuration).toHaveBeenCalledWith(900);
   });
 
-  it("input cancels edit on Escape without calling editMinutes", () => {
+  it("input cancels edit on Escape without calling editDuration", () => {
     const timer = makeTimer();
     render(<MatchTimer timer={timer} />);
     fireEvent.click(screen.getByLabelText(/Timerduur bewerken/));
-    const input = screen.getByLabelText("Timerduur in minuten");
-    fireEvent.change(input, { target: { value: "15" } });
+    const input = screen.getByLabelText("Timerduur (MM:SS of minuten)");
+    fireEvent.change(input, { target: { value: "2:30" } });
     fireEvent.keyDown(input, { key: "Escape" });
-    expect(timer.editMinutes).not.toHaveBeenCalled();
+    expect(timer.editDuration).not.toHaveBeenCalled();
   });
 
   it("clicking digits while running does NOT open input", () => {
@@ -95,6 +105,6 @@ describe("MatchTimer", () => {
     render(<MatchTimer timer={timer} />);
     const digits = screen.getByLabelText(/Resterende tijd/);
     fireEvent.click(digits);
-    expect(screen.queryByLabelText("Timerduur in minuten")).toBeNull();
+    expect(screen.queryByLabelText("Timerduur (MM:SS of minuten)")).toBeNull();
   });
 });

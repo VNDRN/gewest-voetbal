@@ -9,6 +9,9 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { clearState } from "../persistence/localStorage";
 import HelpButton from "./HelpButton";
 import { helpContent, isHelpRoute } from "../content/helpContent";
+import { useMatchTimer } from "../hooks/useMatchTimer";
+import MatchTimer from "./MatchTimer";
+import MatchTimerExpiredModal from "./MatchTimerExpiredModal";
 
 const NAV_ITEMS = [
   { to: "/setup", label: "Instellingen" },
@@ -27,6 +30,7 @@ export default function Layout() {
   const helpEntry = isHelpRoute(location.pathname)
     ? helpContent[location.pathname]
     : undefined;
+  const timer = useMatchTimer(tournament.config.slotDurationMinutes * 60);
 
   function handleSave() {
     const json = exportToJson(tournament);
@@ -91,6 +95,7 @@ export default function Layout() {
             <h1 className="display text-2xl text-ink">{tournament.name}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <MatchTimer timer={timer} />
             <button
               onClick={handleSave}
               className="flex items-center gap-2 rounded-lg border border-hair bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
@@ -226,6 +231,7 @@ export default function Layout() {
           </div>
         </div>
       )}
+      <MatchTimerExpiredModal timer={timer} />
     </div>
   );
 }

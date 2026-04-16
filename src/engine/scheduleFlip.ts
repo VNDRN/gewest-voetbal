@@ -1,25 +1,15 @@
 import type { Change } from "./scheduleMove";
-import type { ScheduledMatch } from "../types";
 
 export type Mover = { key: string };
 
 export function computeMovers(
-  change: Change,
-  matches: ScheduledMatch[]
+  change: Change
 ): Mover[] {
   switch (change.kind) {
     case "move":
       return [];
     case "swap":
       return [{ key: `${change.matchBCompetitionId}:${change.matchBId}` }];
-    case "insert": {
-      const isMoving = (m: ScheduledMatch) =>
-        m.id === change.matchId &&
-        (change.competitionId == null || m.competitionId === change.competitionId);
-      return matches
-        .filter((m) => m.timeSlot >= change.atSlot && !isMoving(m))
-        .map((m) => ({ key: `${m.competitionId}:${m.id}` }));
-    }
   }
 }
 

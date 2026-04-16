@@ -45,7 +45,7 @@ function createDefaultTournament(): Tournament {
     id: crypto.randomUUID(),
     name: "Gewest Voetbal",
     date: new Date().toISOString().slice(0, 10),
-    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00", breaks: [] },
+    config: { fieldCount: 3, slotDurationMinutes: 20, startTime: "09:00", breaks: [], slotCount: 0 },
     competitions: [
       createEmptyCompetition("mens", "Heren"),
       createEmptyCompetition("womens", "Dames"),
@@ -94,6 +94,8 @@ export type TournamentAction =
   | { type: "UPDATE_BREAK"; breakId: string; durationMinutes: number }
   | { type: "REMOVE_BREAK"; breakId: string }
   | { type: "APPLY_SCHEDULE_CHANGE"; change: Change }
+  | { type: "ADD_SLOT"; atSlot: number }
+  | { type: "REMOVE_SLOT"; slot: number }
   | { type: "RESET" };
 
 function updateCompetition(
@@ -152,7 +154,30 @@ function flattenMatches(state: Tournament) {
   return { flat, rounds };
 }
 
-function tournamentReducer(
+function shiftBreaksForwardFrom(
+  breaks: ScheduleBreak[],
+  atSlot: number
+): ScheduleBreak[] {
+  return breaks.map((b) =>
+    b.afterTimeSlot >= atSlot - 1
+      ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
+      : b
+  );
+}
+
+function shiftBreaksBackwardFrom(
+  breaks: ScheduleBreak[],
+  slot: number
+): ScheduleBreak[] {
+  return breaks.map((b) =>
+    b.afterTimeSlot > slot
+      ? { ...b, afterTimeSlot: b.afterTimeSlot - 1 }
+      : b
+  );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function tournamentReducer(
   state: Tournament,
   action: TournamentAction
 ): Tournament {
@@ -196,11 +221,23 @@ function tournamentReducer(
         })),
       }));
 
-    case "SET_GROUPS":
-      return updateCompetition(state, action.competitionId, (c) => ({
+    case "SET_GROUPS": {
+      const nextState = updateCompetition(state, action.competitionId, (c) => ({
         ...c,
         groups: action.groups,
       }));
+      const { flat } = flattenMatches(nextState);
+      const maxSlot = flat.reduce((max, mm) => Math.max(max, mm.timeSlot), -1);
+      const slotCount = maxSlot + 1;
+      return {
+        ...nextState,
+        config: {
+          ...nextState.config,
+          slotCount,
+          breaks: nextState.config.breaks.filter((b) => b.afterTimeSlot < slotCount),
+        },
+      };
+    }
 
     case "SET_SCORE":
       return updateCompetition(state, action.competitionId, (c) => ({
@@ -217,11 +254,22 @@ function tournamentReducer(
         ),
       }));
 
-    case "SET_KNOCKOUT_ROUNDS":
-      return updateCompetition(state, action.competitionId, (c) => ({
+    case "SET_KNOCKOUT_ROUNDS": {
+      const nextState = updateCompetition(state, action.competitionId, (c) => ({
         ...c,
         knockoutRounds: action.knockoutRounds,
       }));
+      const { flat } = flattenMatches(nextState);
+      const maxSlot = flat.reduce((max, mm) => Math.max(max, mm.timeSlot), -1);
+      const slotCount = Math.max(maxSlot + 1, state.config.slotCount);
+      return {
+        ...nextState,
+        config: {
+          ...nextState.config,
+          slotCount,
+        },
+      };
+    }
 
     case "SET_KNOCKOUT_SCORE":
       return updateCompetition(state, action.competitionId, (c) => ({
@@ -274,41 +322,16 @@ function tournamentReducer(
       const res = validateChange(flat, action.change, { rounds });
       if (!res.ok) return state;
 
-      // For insert: applyChange shifts match slots but not breaks — fix that here.
-      let updatedBreaks = state.config.breaks;
-      if (action.change.kind === "insert") {
-        const atSlot = action.change.atSlot;
-        updatedBreaks = updatedBreaks.map((b) =>
-          b.afterTimeSlot >= atSlot
-            ? { ...b, afterTimeSlot: b.afterTimeSlot + 1 }
-            : b
-        );
-      }
-
-      // Compress any empty timeslots left behind by move/insert.
-      const usedSlots = [...new Set(res.next.map((m) => m.timeSlot))].sort(
-        (a, b) => a - b
-      );
-      const isDense = usedSlots.every((slot, i) => slot === i);
-      const slotMap = isDense
-        ? null
-        : new Map(usedSlots.map((slot, i) => [slot, i]));
-
-      if (slotMap) {
-        updatedBreaks = updatedBreaks
-          .filter((b) => slotMap.has(b.afterTimeSlot))
-          .map((b) => ({ ...b, afterTimeSlot: slotMap.get(b.afterTimeSlot)! }));
-      }
-
       const posById = new Map<string, { timeSlot: number; fieldIndex: number }>();
       for (const nm of res.next) {
-        const timeSlot = slotMap ? slotMap.get(nm.timeSlot)! : nm.timeSlot;
-        posById.set(`${nm.competitionId}/${nm.id}`, { timeSlot, fieldIndex: nm.fieldIndex });
+        posById.set(`${nm.competitionId}/${nm.id}`, {
+          timeSlot: nm.timeSlot,
+          fieldIndex: nm.fieldIndex,
+        });
       }
 
       return {
         ...state,
-        config: { ...state.config, breaks: updatedBreaks },
         competitions: state.competitions.map((c) => ({
           ...c,
           groups: c.groups.map((g) => ({
@@ -324,6 +347,53 @@ function tournamentReducer(
               const p = posById.get(`${c.id}/${mm.id}`);
               return p ? { ...mm, timeSlot: p.timeSlot, fieldIndex: p.fieldIndex } : mm;
             }),
+          })),
+        })) as [Competition, Competition],
+      };
+    }
+
+    case "ADD_SLOT": {
+      const atSlot = action.atSlot;
+      const shiftMatch = <T extends { timeSlot: number }>(mm: T): T =>
+        mm.timeSlot >= atSlot ? { ...mm, timeSlot: mm.timeSlot + 1 } : mm;
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          slotCount: state.config.slotCount + 1,
+          breaks: shiftBreaksForwardFrom(state.config.breaks, atSlot),
+        },
+        competitions: state.competitions.map((c) => ({
+          ...c,
+          groups: c.groups.map((g) => ({ ...g, matches: g.matches.map(shiftMatch) })),
+          knockoutRounds: c.knockoutRounds.map((r) => ({
+            ...r,
+            matches: r.matches.map(shiftMatch),
+          })),
+        })) as [Competition, Competition],
+      };
+    }
+
+    case "REMOVE_SLOT": {
+      const slot = action.slot;
+      const { flat } = flattenMatches(state);
+      const occupied = flat.some((mm) => mm.timeSlot === slot);
+      if (occupied) return state;
+      const shiftMatch = <T extends { timeSlot: number }>(mm: T): T =>
+        mm.timeSlot > slot ? { ...mm, timeSlot: mm.timeSlot - 1 } : mm;
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          slotCount: state.config.slotCount - 1,
+          breaks: shiftBreaksBackwardFrom(state.config.breaks, slot),
+        },
+        competitions: state.competitions.map((c) => ({
+          ...c,
+          groups: c.groups.map((g) => ({ ...g, matches: g.matches.map(shiftMatch) })),
+          knockoutRounds: c.knockoutRounds.map((r) => ({
+            ...r,
+            matches: r.matches.map(shiftMatch),
           })),
         })) as [Competition, Competition],
       };

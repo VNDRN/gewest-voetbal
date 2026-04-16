@@ -17,6 +17,7 @@ export type TournamentConfig = {
   slotDurationMinutes: number;
   startTime: string;
   breaks: ScheduleBreak[];
+  slotCount: number;
 };
 
 export type Competition = {

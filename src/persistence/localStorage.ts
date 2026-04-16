@@ -19,6 +19,22 @@ export function loadState(): Tournament | null {
     if (!state.config.breaks) {
       state.config.breaks = [];
     }
+    if (typeof state.config.slotCount !== "number") {
+      let maxSlot = -1;
+      for (const c of state.competitions) {
+        for (const g of c.groups) {
+          for (const mm of g.matches) {
+            if (mm.timeSlot > maxSlot) maxSlot = mm.timeSlot;
+          }
+        }
+        for (const r of c.knockoutRounds) {
+          for (const mm of r.matches) {
+            if (mm.timeSlot > maxSlot) maxSlot = mm.timeSlot;
+          }
+        }
+      }
+      state.config.slotCount = maxSlot + 1;
+    }
     state.competitions = state.competitions.map((c) => ({
       ...c,
       name: COMPETITION_NAME_MAP[c.name] ?? c.name,

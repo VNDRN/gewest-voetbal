@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyChange, validateChange, classifyTargets } from "../../engine/scheduleMove";
-import type { ScheduleBreak, ScheduledMatch } from "../../types";
+import type { ScheduledMatch } from "../../types";
 
 function m(partial: Partial<ScheduledMatch> = {}): ScheduledMatch {
   return {
@@ -60,44 +60,6 @@ describe("applyChange — swap", () => {
   });
 });
 
-describe("applyChange — insert", () => {
-  it("shifts every match with timeSlot >= atSlot by +1 and places the moved match at (atSlot, toField)", () => {
-    const matches = [
-      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
-      m({ id: "b", timeSlot: 1, fieldIndex: 1, homeTeamId: "c", awayTeamId: "d" }),
-      m({ id: "c", timeSlot: 2, fieldIndex: 0, homeTeamId: "e", awayTeamId: "f" }),
-    ];
-    const next = applyChange(matches, {
-      kind: "insert",
-      matchId: "c",
-      atSlot: 1,
-      toField: 2,
-    });
-    const a = next.find((n) => n.id === "a")!;
-    const b = next.find((n) => n.id === "b")!;
-    const c = next.find((n) => n.id === "c")!;
-    expect(a.timeSlot).toBe(0);
-    expect(b.timeSlot).toBe(2); // shifted from 1 to 2
-    expect(c.timeSlot).toBe(1); // placed at atSlot
-    expect(c.fieldIndex).toBe(2);
-  });
-
-  it("does not shift the inserted match when its original slot is >= atSlot", () => {
-    const matches = [
-      m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
-      m({ id: "b", timeSlot: 3, fieldIndex: 0, homeTeamId: "c", awayTeamId: "d" }),
-    ];
-    const next = applyChange(matches, {
-      kind: "insert",
-      matchId: "b",
-      atSlot: 1,
-      toField: 1,
-    });
-    const b = next.find((n) => n.id === "b")!;
-    expect(b.timeSlot).toBe(1);
-    expect(b.fieldIndex).toBe(1);
-  });
-});
 
 describe("validateChange — team conflict", () => {
   it("rejects a swap that would put the same team in the same slot twice", () => {
@@ -287,12 +249,6 @@ describe("changeFromDragEnd", () => {
     });
   });
 
-  it("returns an insert for drop on an insert id", () => {
-    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
-    const c = changeFromDragEnd("a", "insert-1-2", matches);
-    expect(c).toEqual({ kind: "insert", matchId: "a", atSlot: 1, toField: 2 });
-  });
-
   it("returns null for unrecognized over id", () => {
     const matches = [m({ id: "a" })];
     expect(changeFromDragEnd("a", "nope", matches)).toBeNull();
@@ -303,11 +259,16 @@ describe("changeFromDragEnd", () => {
     const c = changeFromDragEnd("a", "cell-3-1", matches);
     expect(c).toBeNull();
   });
+
+  it("returns null for any insert-* id", () => {
+    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
+    expect(changeFromDragEnd("a", "insert-1-0", matches)).toBeNull();
+    expect(changeFromDragEnd("a", "insert-pre-1-0", matches)).toBeNull();
+  });
 });
 
 describe("classifyTargets", () => {
   const fieldCount = 2;
-  const breaks: ScheduleBreak[] = [];
 
   it("marks empty cells as valid-move and occupied cells with no conflict as valid-swap", () => {
     const matches = [
@@ -315,7 +276,7 @@ describe("classifyTargets", () => {
       m({ id: "b", timeSlot: 0, fieldIndex: 1, homeTeamId: "p", awayTeamId: "q" }),
       m({ id: "c", timeSlot: 1, fieldIndex: 0, homeTeamId: "r", awayTeamId: "s" }),
     ];
-    const map = classifyTargets(matches, "a", fieldCount, breaks);
+    const map = classifyTargets(matches, "a", fieldCount);
     expect(map.get("cell-0-0")).toBe("valid-move"); // source cell is itself a valid target (no-op, but not rejected)
     expect(map.get("cell-0-1")).toBe("valid-swap"); // swap a<->b, teams disjoint
     expect(map.get("cell-1-0")).toBe("valid-swap");
@@ -329,43 +290,23 @@ describe("classifyTargets", () => {
       m({ id: "b", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
       m({ id: "c", timeSlot: 1, fieldIndex: 1, homeTeamId: "y", awayTeamId: "r" }),
     ];
-    const map = classifyTargets(matches, "a", fieldCount, breaks);
+    const map = classifyTargets(matches, "a", fieldCount);
     expect(map.get("cell-1-0")).toBe("invalid");
   });
 
-  it("generates insert ids between every pair of rows and around breaks", () => {
+  it("does not emit any insert-* target ids", () => {
     const matches = [
       m({ id: "a", timeSlot: 0, fieldIndex: 0 }),
       m({ id: "b", timeSlot: 1, fieldIndex: 0, homeTeamId: "c", awayTeamId: "d" }),
     ];
-    const withBreak: ScheduleBreak[] = [
-      { id: "br1", afterTimeSlot: 0, durationMinutes: 10 },
-    ];
-    const map = classifyTargets(matches, "a", fieldCount, withBreak);
-    expect(map.has("insert-0-0")).toBe(true); // above row 0
-    expect(map.has("insert-1-0")).toBe(true); // between slots 0 and 1 (also bracketing break)
-    expect(map.has("insert-2-0")).toBe(true); // below slot 1
-    // Above-break strip gets its own distinct droppable id so dnd-kit can detect
-    // both sides of the break without colliding.
-    expect(map.has("insert-pre-1-0")).toBe(true);
-    expect(map.get("insert-pre-1-0")).toBe(map.get("insert-1-0"));
+    const map = classifyTargets(matches, "a", fieldCount);
+    for (const key of map.keys()) {
+      expect(key.startsWith("insert-")).toBe(false);
+      expect(key.startsWith("insert-pre-")).toBe(false);
+    }
   });
 });
 
-describe("changeFromDragEnd — insert-pre id", () => {
-  it("derives the same Change from insert-pre as from insert", () => {
-    const matches = [m({ id: "a", timeSlot: 0, fieldIndex: 0 })];
-    const c1 = changeFromDragEnd("a", "insert-1-0", matches);
-    const c2 = changeFromDragEnd("a", "insert-pre-1-0", matches);
-    expect(c1).toEqual(c2);
-    expect(c2).toEqual({
-      kind: "insert",
-      matchId: "a",
-      atSlot: 1,
-      toField: 0,
-    });
-  });
-});
 
 // ---------------------------------------------------------------------------
 // competition scoping — applyChange
@@ -421,14 +362,13 @@ describe("applyChange — competition scoping", () => {
 
 describe("classifyTargets — competition scoping", () => {
   const fieldCount = 2;
-  const breaks: ScheduleBreak[] = [];
 
   it("marks a cell occupied by the other competition as valid-swap when no constraint conflicts", () => {
     const matches = [
       m({ id: "a", competitionId: "mens",   timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
       m({ id: "b", competitionId: "womens", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
     ];
-    const map = classifyTargets(matches, "a", fieldCount, breaks, { rounds: [] }, "mens");
+    const map = classifyTargets(matches, "a", fieldCount, { rounds: [] }, "mens");
     expect(map.get("cell-1-0")).toBe("valid-swap");
   });
 
@@ -437,7 +377,7 @@ describe("classifyTargets — competition scoping", () => {
       m({ id: "a", competitionId: "mens", timeSlot: 0, fieldIndex: 0, homeTeamId: "x", awayTeamId: "y" }),
       m({ id: "b", competitionId: "mens", timeSlot: 1, fieldIndex: 0, homeTeamId: "p", awayTeamId: "q" }),
     ];
-    const map = classifyTargets(matches, "a", fieldCount, breaks, { rounds: [] }, "mens");
+    const map = classifyTargets(matches, "a", fieldCount, { rounds: [] }, "mens");
     expect(map.get("cell-1-0")).toBe("valid-swap");
   });
 });
@@ -472,9 +412,6 @@ describe("changeFromDragEnd — competition scoping", () => {
 
     const swap = changeFromDragEnd("a", "cell-2-1", matches, "mens");
     expect(swap).toMatchObject({ kind: "swap", matchACompetitionId: "mens", matchBCompetitionId: "mens" });
-
-    const insert = changeFromDragEnd("a", "insert-1-0", matches, "mens");
-    expect(insert).toMatchObject({ kind: "insert", competitionId: "mens" });
   });
 });
 

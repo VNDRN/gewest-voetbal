@@ -122,33 +122,40 @@ function AddRowGutter({
   fieldCount,
   onAddSlot,
   onAddBreak,
+  isDragging,
 }: {
   atSlot: number;
   fieldCount: number;
   onAddSlot: (atSlot: number) => void;
   onAddBreak: (afterTimeSlot: number) => void;
+  isDragging: boolean;
 }) {
   return (
-    <tr className="group/add">
-      <td colSpan={fieldCount + 1} className="border-0 p-0">
-        <div className="flex h-6 w-full items-center justify-center gap-2 opacity-0 transition-opacity group-hover/add:opacity-100">
-          <button
-            type="button"
-            onClick={() => onAddSlot(atSlot)}
-            className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-dashed border-ink/40 bg-card px-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-ink-soft shadow-sm hover:border-ink hover:text-ink"
-          >
-            + Tijdslot
-          </button>
-          {atSlot > 0 && (
-            <button
-              type="button"
-              onClick={() => onAddBreak(atSlot - 1)}
-              className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-dashed border-brand/60 bg-beige/30 px-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand shadow-sm hover:border-brand hover:bg-beige/50"
-            >
-              + Pauze
-            </button>
-          )}
-        </div>
+    <tr>
+      <td colSpan={fieldCount + 1} className="relative z-10 border-0 p-0">
+        {!isDragging && (
+          <div className="group/add relative flex h-0 w-full items-center justify-center">
+            <div className="absolute -top-3 -bottom-3 inset-x-0" />
+            <div className="pointer-events-none absolute z-20 flex items-center gap-2 opacity-0 transition-opacity group-hover/add:opacity-100">
+              <button
+                type="button"
+                onClick={() => onAddSlot(atSlot)}
+                className="pointer-events-auto inline-flex h-[22px] items-center gap-1.5 rounded-full border border-dashed border-ink/40 bg-card px-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-ink-soft shadow-sm hover:border-ink hover:text-ink"
+              >
+                + Tijdslot
+              </button>
+              {atSlot > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onAddBreak(atSlot - 1)}
+                  className="pointer-events-auto inline-flex h-[22px] items-center gap-1.5 rounded-full border border-dashed border-brand/60 bg-beige/30 px-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand shadow-sm hover:border-brand hover:bg-beige/50"
+                >
+                  + Pauze
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </td>
     </tr>
   );
@@ -494,6 +501,7 @@ export default function ScheduleGrid({
               fieldCount={fieldCount}
               onAddSlot={onAddSlot}
               onAddBreak={onAddBreak}
+              isDragging={!!activeId}
             />
             {slots.map((slot) => {
               const schedBreak = breakMap.get(slot);
@@ -658,6 +666,7 @@ export default function ScheduleGrid({
                         fieldCount={fieldCount}
                         onAddSlot={onAddSlot}
                         onAddBreak={onAddBreak}
+                        isDragging={!!activeId}
                       />
                       <tr>
                         <td
@@ -705,6 +714,7 @@ export default function ScheduleGrid({
                     fieldCount={fieldCount}
                     onAddSlot={onAddSlot}
                     onAddBreak={onAddBreak}
+                    isDragging={!!activeId}
                   />
                 </Fragment>
               );

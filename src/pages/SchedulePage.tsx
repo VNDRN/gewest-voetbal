@@ -200,16 +200,27 @@ export default function SchedulePage() {
           onMatchClick={setEditingMatch}
           onAddSlot={(atSlot) => dispatch({ type: "ADD_SLOT", atSlot })}
           onRemoveSlot={(slot) => dispatch({ type: "REMOVE_SLOT", slot })}
-          onAddBreak={(afterTimeSlot) =>
-            dispatch({
-              type: "ADD_BREAK",
-              breakItem: {
-                id: crypto.randomUUID(),
-                afterTimeSlot,
-                durationMinutes: 10,
-              },
-            })
-          }
+          onAddBreak={(afterTimeSlot) => {
+            const existing = tournament.config.breaks.find(
+              (b) => b.afterTimeSlot === afterTimeSlot
+            );
+            if (existing) {
+              dispatch({
+                type: "UPDATE_BREAK",
+                breakId: existing.id,
+                durationMinutes: existing.durationMinutes + 10,
+              });
+            } else {
+              dispatch({
+                type: "ADD_BREAK",
+                breakItem: {
+                  id: crypto.randomUUID(),
+                  afterTimeSlot,
+                  durationMinutes: 10,
+                },
+              });
+            }
+          }}
           onUpdateBreak={(breakId, durationMinutes) =>
             dispatch({ type: "UPDATE_BREAK", breakId, durationMinutes })
           }

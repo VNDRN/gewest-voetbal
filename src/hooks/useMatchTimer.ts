@@ -91,8 +91,8 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
   }, [state.status]);
 
   // Sync derived idle duration from config prop — bails out via referential identity when no change
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHookState((s) => {
       if (s.timer.status !== "idle") return s;
       if (s.timer.customDuration) return s;

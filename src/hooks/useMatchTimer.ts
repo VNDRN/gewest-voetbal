@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { TimerState } from "../persistence/timerStorage";
+import { loadTimerState, saveTimerState, type TimerState } from "../persistence/timerStorage";
+import { playTimerBeep } from "../utils/timerBeep";
 
-export type { TimerState } from "../persistence/timerStorage";
+export type { TimerState };
 
 export interface UseMatchTimerResult {
   status: TimerState["status"];
@@ -45,10 +46,19 @@ function computeRemaining(state: TimerState, now: number): number {
 }
 
 export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
-  const [{ timer: state, dismissed }, setHookState] = useState<HookState>(() => ({
-    timer: idleFromConfig(configSlotSeconds),
-    dismissed: false,
-  }));
+  const [{ timer: state, dismissed }, setHookState] = useState<HookState>(() => {
+    const stored = loadTimerState();
+    if (!stored) {
+      return { timer: idleFromConfig(configSlotSeconds), dismissed: false };
+    }
+    if (stored.status === "running") {
+      const remaining = stored.durationSeconds - (Date.now() - stored.startedAt) / 1000;
+      if (remaining <= 0) {
+        return { timer: { status: "expired", durationSeconds: stored.durationSeconds }, dismissed: false };
+      }
+    }
+    return { timer: stored, dismissed: false };
+  });
   const [now, setNow] = useState(() => Date.now());
 
   // Ticking + expiry — interval runs only while running; transitions to expired when remaining hits zero
@@ -68,6 +78,28 @@ export function useMatchTimer(configSlotSeconds: number): UseMatchTimerResult {
     }, 250);
     return () => clearInterval(id);
   }, [state.status]);
+
+  // Persist timer state on every change — `dismissed` is session-only UI state, never stored
+  useEffect(() => {
+    saveTimerState(state);
+  }, [state]);
+
+  useEffect(() => {
+    if (state.status === "expired") {
+      playTimerBeep();
+    }
+  }, [state.status]);
+
+  // Sync derived idle duration from config prop — bails out via referential identity when no change
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    setHookState((s) => {
+      if (s.timer.status !== "idle") return s;
+      if (s.timer.customDuration) return s;
+      if (s.timer.durationSeconds === configSlotSeconds) return s;
+      return { ...s, timer: { status: "idle", durationSeconds: configSlotSeconds, customDuration: false } };
+    });
+  }, [configSlotSeconds]);
 
   const start = useCallback(() => {
     const ts = Date.now();

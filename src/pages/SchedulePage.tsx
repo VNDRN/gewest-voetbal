@@ -196,7 +196,10 @@ export default function SchedulePage() {
           slotDurationMinutes={tournament.config.slotDurationMinutes}
           breaks={tournament.config.breaks}
           teamNames={teamNames}
+          slotCount={tournament.config.slotCount}
           onMatchClick={setEditingMatch}
+          onAddSlot={(atSlot) => dispatch({ type: "ADD_SLOT", atSlot })}
+          onRemoveSlot={(slot) => dispatch({ type: "REMOVE_SLOT", slot })}
           onAddBreak={(afterTimeSlot) =>
             dispatch({
               type: "ADD_BREAK",
